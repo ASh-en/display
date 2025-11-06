@@ -4,7 +4,6 @@
 build*/
 [Cc]MakeCache.txt
 [Cc]MakeFiles/
-Makefile
 cmake_install.cmake
 install_manifest.txt
 
