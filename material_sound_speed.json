@@ -1,0 +1,24 @@
+{
+    "material_sound_speed_setting": {
+      "materials_list": [
+        {
+          "material_name": "AL2219",
+          "sound_speed_m_per_s": 3150.0
+        },
+        {
+          "material_name": "AL7050",
+          "sound_speed_m_per_s": 3093.0
+        },
+        {
+            "material_name": "AL7075",
+            "sound_speed_m_per_s": 3090.0
+          },
+        {
+          "material_name": "AL6061",
+          "sound_speed_m_per_s": 3199.0
+        }
+      ],
+      "current_material": "AL7050",
+      "current_sound_speed_m_per_s": 3093.0
+    }
+  }

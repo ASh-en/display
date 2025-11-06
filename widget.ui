@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Widget</class>
+ <widget class="QWidget" name="Widget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>480</width>
+    <height>320</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>电磁超声测厚系统</string>
+  </property>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>1</x>
+     <y>2</y>
+     <width>471</width>
+     <height>311</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::RightToLeft</enum>
+        </property>
+        <property name="text">
+         <string>连接状态</string>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::PlainText</enum>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="lbl_connect_status">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::RightToLeft</enum>
+        </property>
+        <property name="text">
+         <string>未连接</string>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::PlainText</enum>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QPushButton" name="btn_poweroff">
+        <property name="styleSheet">
+         <string notr="true">
+QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}
+QPushButton:pressed{
+    background:#0F5C7D; 
+}</string>
+        </property>
+        <property name="text">
+         <string>关机</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_reboot">
+        <property name="styleSheet">
+         <string notr="true">
+QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}
+QPushButton:hover{background:#3A9FCF;}
+QPushButton:pressed{background:#1A5F7A; border:2px solid #4FB3D9;}
+       </string>
+        </property>
+        <property name="text">
+         <string>重启</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_connect">
+        <property name="styleSheet">
+         <string notr="true">
+QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}
+QPushButton:hover{background:#3A9FCF;}
+QPushButton:pressed{background:#1A5F7A; border:2px solid #4FB3D9;}
+       </string>
+        </property>
+        <property name="text">
+         <string>连接</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QStackedWidget" name="stackedWidget">
+      <property name="currentIndex">
+       <number>2</number>
+      </property>
+      <widget class="QWidget" name="pageMeasure"/>
+      <widget class="QWidget" name="pageCalibrate"/>
+      <widget class="QWidget" name="pageParam"/>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="spacing">
+       <number>15</number>
+      </property>
+      <item>
+       <widget class="QPushButton" name="btnMeasure">
+        <property name="styleSheet">
+         <string notr="true">
+QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}
+QPushButton:hover{background:#3A9FCF;}
+QPushButton:checked{background:#1A5F7A; border:2px solid #4FB3D9;}
+       </string>
+        </property>
+        <property name="text">
+         <string>测量</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnCalibrate">
+        <property name="styleSheet">
+         <string notr="true">
+QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}
+QPushButton:hover{background:#3A9FCF;}
+QPushButton:checked{background:#1A5F7A; border:2px solid #4FB3D9;}
+       </string>
+        </property>
+        <property name="text">
+         <string>校准</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnParam">
+        <property name="styleSheet">
+         <string notr="true">
+QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}
+QPushButton:hover{background:#3A9FCF;}
+QPushButton:checked{background:#1A5F7A; border:2px solid #4FB3D9;}
+       </string>
+        </property>
+        <property name="text">
+         <string>参数设置</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QLabel" name="lbl_status">
+      <property name="text">
+       <string>状态</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>
