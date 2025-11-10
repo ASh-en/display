@@ -61,15 +61,13 @@ uint32_t dac8760::DAC8760_Read(uint8_t Addr) {
 void dac8760::Delay(uint32_t nCount) {
     for (; nCount != 0; nCount--);
 }
-void dac8760::elec_write(float value){
-    float SetValue;
+void dac8760::elec_write(double value){
+    double SetValue;
     SetValue = value;
     SetValue -=4;
     SetValue *= (65536/16);
-    if (SetValue<0)
-    SetValue=0;//防止溢出
-    if (SetValue>65535)
-    SetValue=65535;//防止溢出
+    if (SetValue<0)SetValue=0;//防止下溢出
+    if (SetValue>65535)SetValue=65535;//防止上溢出
     uint16_t DAC_data = (uint16_t)SetValue;
     DAC8760_Write(0x01,DAC_data);//写入数据寄存器
 }

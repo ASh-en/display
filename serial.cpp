@@ -13,8 +13,8 @@ serial::serial(QObject *parent) : QObject(parent)
 		qDebug() << "Manufacturer:" << info.manufacturer();
 	}
   qDebug()<<"serial info out success";
-	serial1.setPortName("ttyAMA0");  // ????????????ttyAMA1
-	//serial1.setPortName("ttyUSB0");  // ????????????
+	serial1.setPortName("ttyAMA0");  // Raspberry Pi OS(Debian Trixie) UART5 port：ttyAMA5，GPIO12(TX)，GPIO13(RX)
+	//serial1.setPortName("ttyUSB0");  
 	serial1.setBaudRate(QSerialPort::Baud115200);
 	serial1.setDataBits(QSerialPort::Data8);
 	serial1.setParity(QSerialPort::NoParity);
@@ -29,8 +29,8 @@ serial::serial(QObject *parent) : QObject(parent)
     init_device_param(mDeviceParam);
 	timer1 = new QTimer(this);
 	timer2 = new QTimer(this);
-	timer3 = new QTimer(this);
-	timer4 = new QTimer(this);
+	timer3 = new QTimer(this);  //同步时钟，如果厚度数据超时则重新同步，timer3每秒触发一次
+	timer4 = new QTimer(this);  //获取厚度数据时钟，如果厚度数据开始发送则停止，timer4每100ms触发一次
 	connect(timer1, SIGNAL(timeout()), this, SLOT(timer1_slot()));
 	connect(timer2, SIGNAL(timeout()), this, SLOT(timer2_slot()));
 	connect(timer3, SIGNAL(timeout()), this, SLOT(timeSync()));
@@ -87,7 +87,7 @@ void serial::onReadyRead()
     			timer3->stop();  // 只有激活时才停止
 			}
 			qDebug() << "Time synchronized successfully.";
-			//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		
 			getThk();
 			if (!timer4->isActive()) 
 			{
