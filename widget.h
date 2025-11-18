@@ -12,7 +12,7 @@
 #include "form_calibrate.h"
 #include "form_param.h"
 #include "form_measure.h"
-
+#include "modbus_server.h"
 
 namespace Ui {
 class Widget;
@@ -39,7 +39,7 @@ public slots:
     void onBtnRebootClicked();
     void onBtnConnectClicked();
     void onConnectStatus(bool isConnect);
-
+    void onThicknessDataChanged(const double& thickness); // 新增槽函数处理厚度数据变化
 
 
 private slots:
@@ -47,11 +47,12 @@ private slots:
 
 private:
 // 测量界面核心组件
-     Ui::Widget *ui;
-
+    Ui::Widget *ui;
+    ModbusServer *m_modbusServer; 
     
     // 辅助函数
     void resetBtnCheckedState();
+    void initModbusServer(); // 新增函数初始化Modbus服务器
 public:
     form_calibrate* pCalibrateForm;
     form_param* pParamForm;

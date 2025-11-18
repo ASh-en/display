@@ -32,8 +32,10 @@ Widget::Widget(QWidget *parent) :
     connect(ui->btn_connect, &QPushButton::clicked, this, &Widget::onBtnConnectClicked);
     connect(pMeasureForm,&form_measure::sendStatusText, this ,&Widget::onSetStatusTxt);
 
-
-
+    // 连接厚度数据信号到Modbus服务器
+    connect(pMeasureForm, &form_measure::sendThicknessData, this, &Widget::onThicknessDataChanged); 
+    // 初始化Modbus服务器
+    initModbusServer();
 
     // 默认显示测量页面
     ui->stackedWidget->setCurrentWidget(pMeasureForm);
@@ -46,7 +48,26 @@ Widget::~Widget()
 
 }
 
+void Widget::initModbusServer()
+{
+    m_modbusServer = new ModbusServer(this);
+    
+    // 启动Modbus TCP服务器，监听所有地址，端口502
+    if (!m_modbusServer->startServer("192.168.0.1", 502)) {
+        qDebug() << "Modbus服务器初始化失败";
+    } else {
+        qDebug() << "Modbus服务器初始化成功";
+    }
+}
 
+
+void Widget::onThicknessDataChanged(const double& thickness)
+{
+    // 将厚度数据传递给Modbus服务器
+    if (m_modbusServer && m_modbusServer->isRunning()) {
+        m_modbusServer->setThicknessData(thickness);
+    }
+}
 
 void Widget::update_para(const QByteArray &para_data){
 
