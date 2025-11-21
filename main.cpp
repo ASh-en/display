@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
      }
 
     seri.timeSync();
-	seri.timer3->start(1000);
+	//seri.timer3->start(1000);
 
   
     
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
      // 发送数据
      QString dataToSend = "Hello, Serial Port!";
      seri.serial1.write(dataToSend.toLocal8Bit());
-     seri.timer_elec_quantity->start(10000);
+     
      //seri.timer2->start(3000);
     w.show();
 

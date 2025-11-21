@@ -59,7 +59,9 @@ public:
 
 signals:
 	void timeSyncReplyReceived(uint16_t timestamp);
+    //
 	void startTimeSync();//ash 20250715
+    void getCharge();
 	
     void _charge(const int& data);
     void _thickness(const double& data);
@@ -81,15 +83,21 @@ public slots:
     void onParamChanged(INT16 param_no, INT16 param_val);
     void onReadParam();
     void stopThk();
+    void StateCheck();
 
 private:
+    bool isInTimeSyncProgress = false;
+    bool isRecvThicknessData = false;
+    bool waitForStopThkResponse = false;
+    bool noThkResponse = false;
     void processBuffer();
     void processChargeData();
     void processThicknessData();
     void processWaveData();
     void processParamData(const QByteArray &para_data);
+    void processTimeSync();
     void init_device_param(DEVICE_ULTRA_PARAM_U& deviceParam);
-    bool isRecvThicknessData;
+    
 public:
     QSerialPort serial1;
     QByteArray RecvData;
@@ -101,11 +109,13 @@ public:
     QTimer *timer_elec_quantity; //
 	QTimer *timer3; //同步时钟
 	QTimer *timer4;	//获取厚度时钟
+    QTimer *timertick;//基准时间步进 5ms
 private:
-	bool waitForSyncReply = false;
-	bool matched = false;
-	bool syncInProgress = false;//ash 20250715
+	
+	//bool matched = false;
+	//bool syncInProgress = false;//ash 20250715
 	uint16_t lastSentTimestamp = 0;
+    uint16_t timecount = 0;
 	#ifdef __TEST_LOSS_RATE__
 	uint8_t testcnt = 0; // Packet loss rate test
 	uint32_t testloss = 0;
@@ -113,12 +123,13 @@ private:
 	double testRate = 0;
 	#endif
     QEventLoop* syncLoop = nullptr;
-    QByteArray ts_buffer;
+    
 	
     QTimer *m_timer;
     QThread *m_thread;
     QByteArray m_buffer;
     QByteArray t_buffer;
+    QByteArray ts_buffer;
     QByteArray c_buffer;
     QByteArray p_buffer;
     QByteArray w_buffer;

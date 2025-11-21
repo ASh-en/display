@@ -23,18 +23,18 @@ serial::serial(QObject *parent) : QObject(parent)
 	serial1.setStopBits(QSerialPort::OneStop);
 	serial1.setFlowControl(QSerialPort::NoFlowControl);
 	
+    timertick = new QTimer(this);  //基准时间步进 5ms
+
 	QObject::connect(&serial1, &QSerialPort::readyRead,this,&serial::onReadyRead);
 	QObject::connect(this, &serial::startTimeSync, this, &serial::timeSync);
+    QObject::connect(this, &serial::getCharge, this, &serial::timer_elec_quantity_slot);
+    QObject::connect(timertick, &QTimer::timeout, this, &serial::StateCheck);
 	//默认开启接收厚度
-    isRecvThicknessData = true;
-
+    
     init_device_param(mDeviceParam);
-	timer_elec_quantity = new QTimer(this);
-	timer3 = new QTimer(this);  //同步时钟，如果厚度数据超时则重新同步，timer3每秒触发一次
-	timer4 = new QTimer(this);  //获取厚度数据时钟，如果厚度数据开始发送则停止，timer4每100ms触发一次
-	connect(timer_elec_quantity, SIGNAL(timeout()), this, SLOT(timer_elec_quantity_slot()));
-	connect(timer3, SIGNAL(timeout()), this, SLOT(timeSync()));
-	connect(timer4, SIGNAL(timeout()), this, SLOT(getThk()));
+	
+    timertick->start(5); //5ms
+
 
 }
 void serial::ReadData(){
@@ -62,55 +62,25 @@ void serial::onReadyRead()
 	
 	
 	index = 0;
-	if(((index=m_buffer.indexOf("#TH"))>=0) && m_buffer.size()>=LEN_TH){
-		while((index=m_buffer.indexOf("#TH"))>=0){
+	if(((index=m_buffer.indexOf("#TH"))>=0) && m_buffer.size()>=LEN_TH)
+    {
+		while((index=m_buffer.indexOf("#TH"))>=0)
+        {
 			t_buffer = m_buffer.mid(index,LEN_TH);
 			m_buffer.remove(index,LEN_TH);
+
 			processThicknessData();
 		}
 	}
-	index = m_buffer.indexOf("#TIME");
+
+	index = 0;
 	//开启接收厚度数据，并且正在等待同步回复，并且缓冲区中有完整的时间同步帧
-    if (isRecvThicknessData && waitForSyncReply && index >= 0 && m_buffer.size() >= index + 8) 
+    if (((index=m_buffer.indexOf("#TIME"))>=0) && m_buffer.size() >= index + 8) 
     {
         ts_buffer = m_buffer.mid(index, 8);
         m_buffer.remove(index, 8);
-        
-        uint16_t recv_ts = ((uint8_t)ts_buffer[5] << 8) | (uint8_t)ts_buffer[6];
-        qDebug() << "recv #TIME frame:" << ts_buffer;
-        ts_buffer.clear();
-		qDebug() << "[TimeSync] Received ts:" << recv_ts << "expected:" << lastSentTimestamp;
-		matched=(recv_ts == lastSentTimestamp);
-		if (matched)
-		{
-			if (timer3->isActive()) 
-			{
-    			timer3->stop();  // 只有激活时才停止
-			}
-			qDebug() << "Time synchronized successfully.";
-		
-			getThk();
-			if (!timer4->isActive()) 
-			{
-    			timer4->start(100);  
-			}
-			syncInProgress = false;
-			waitForSyncReply = false;
-			matched = false;
-			
-			return ;
-		} 
-		else
 
-		{
-			emit startTimeSync();
-			if (!timer3->isActive()) 
-			{
-    			timer3->start(1000);  
-			}
-			
-		}
-		
+        processTimeSync();
         
     }
 	
@@ -151,7 +121,6 @@ void serial::onReadyRead()
 
 	}
 
-
 	index = 0;
 	while(m_buffer.indexOf(BEGIN_BAG_HEAD_30)>=0 && m_buffer[m_buffer.indexOf(WAVE_TAIL)+14]==0xdc && m_buffer[m_buffer.indexOf(WAVE_TAIL)+15]==0xba){
 		qDebug()<<"begin remove size:"<<m_buffer.size();
@@ -191,6 +160,14 @@ void serial::onReadyRead()
 	qDebug()<<"wava data:"<<w_buffer;
 	//qDebug()<<"wave tail 1:"<<m_buffer[m_buffer.indexOf(WAVE_TAIL)+12];
 	//qDebug()<<"wave tail 2:"<<m_buffer[m_buffer.indexOf(WAVE_TAIL)+13];
+
+    index = 0;
+    if(((index=m_buffer.indexOf("#STOOK$"))>=0))
+    {
+		m_buffer.remove(index,7);
+        isRecvThicknessData = false;
+	}
+
 
 	if(m_buffer.size()>8000)
 	{
@@ -330,10 +307,7 @@ void serial::processParamData(const QByteArray &para_data)
 
 void serial::processThicknessData()
 {
-	if (timer4->isActive()) 
-	{
-    	timer4->stop();  // 只有激活时才停止
-	}
+	noThkResponse = false;
 	
 	if (t_buffer.size() >= LEN_TH && t_buffer[LEN_TH-1]=='$') 
 	{
@@ -352,11 +326,9 @@ void serial::processThicknessData()
 								  .arg(lossdelta)
 								  .arg(testTotal)
 								  .arg(testRate, 0, 'f', 2);
-			
 		}
-		
-
         #endif
+
 		/*Packet loss rate test end*/	
 		quint16 thickness = (t_buffer[4] << 8) | t_buffer[5];
 		/*	start	name:ash	time:20250703	note:Added operations for processing timestamps,Protocol(5)
@@ -376,46 +348,63 @@ void serial::processThicknessData()
 			{
 			    qDebug() << "TimeOut" ;
 				consecutiveTimeouts++;
-				t_buffer.clear(); // drop stale data
+				t_buffer.clear();                           // drop stale data
 				m_buffer.clear();
-				emit _thickness(static_cast<double>(0));//add 20250926
+				emit _thickness(static_cast<double>(0));    //add 20250926
 				if (consecutiveTimeouts >= 10) 
 				{
-					serial1.write("#STOTHK%%%%%");
-					serial1.waitForBytesWritten(5);
-					std::this_thread::sleep_for(std::chrono::milliseconds(100));
-					
-					if(!syncInProgress)
+                    consecutiveTimeouts = 0;        // 触发后立即清零
+                    stopThk();                      // 停止获取厚度数据
+					if(!isInTimeSyncProgress)
 					{
-						emit startTimeSync();  // 触发异步校时
-						if (!timer3->isActive()) 
-						{
-	    					timer3->start(1000);  
-						}
-						consecutiveTimeouts = 0;  // 触发后立即清零
+						emit startTimeSync();       // 触发异步校时
 					}
 					
-				}
-				
-				
+				}		
 				return ;
 			}
 			else
 			{
-			    consecutiveTimeouts = 0;
+			    consecutiveTimeouts = 0;            // 非连续重置超时计数器
 			}
 			
 			//Todo：
 		}
 			
-		/*	end		*/
-		
+		/*	end		*/	
 		emit _thickness(static_cast<double>(thickness));
-
-		
 		t_buffer.clear(); // 移除已处理的数据
 	}
 }
+
+void serial::processTimeSync()
+{
+    // 解析接收到的时间戳
+    uint16_t recv_ts = (static_cast<uint8_t>(ts_buffer[5]) << 8) |
+                       static_cast<uint8_t>(ts_buffer[6]);
+
+    qDebug() << "recv #TIME frame:" << ts_buffer;
+    qDebug() << "[TimeSync] Received ts:" << recv_ts
+             << "expected:" << lastSentTimestamp;
+
+    bool matched = (recv_ts == lastSentTimestamp);
+
+    if (matched)
+    {
+        isInTimeSyncProgress = false;
+        qDebug() << "Time synchronized successfully.";
+        // 获取厚度数据
+        getThk();
+        // 重置同步状态
+    }
+    else
+    {
+        // 时间戳不匹配，重新触发校时
+        emit startTimeSync();
+    }
+    ts_buffer.clear(); // 移除已处理的数据
+}
+
 short convertToLittleBigEndian(short data)
 {
 	char a[2];
@@ -467,7 +456,7 @@ void serial::processWaveData()
 */
 void serial::timeSync()
 {
-	syncInProgress = true;
+	isInTimeSyncProgress = true;
 	m_buffer.clear();
 	char buffer[13] = {0};
 	memcpy(buffer, "#TMSET", 6);
@@ -482,14 +471,10 @@ void serial::timeSync()
 			
 	qDebug() << "Sending timeSync command:" << buffer << "timestamp:" << timestamp;
 	//m_buffer.clear();///
-	waitForSyncReply = true;
+    
 	serial1.write(buffer);
-	serial1.waitForBytesWritten(5);	
-		
-			
-	qDebug() << "Waiting Time synchronized .......";
-	serial1.waitForReadyRead( 1000);
-		
+	serial1.flush();	
+	qDebug() << "Waiting Time synchronized .......";	
 }
 
 		
@@ -499,38 +484,29 @@ void serial::timeSync()
 
 void serial::getThk()
 {
+    isRecvThicknessData = true;
+    noThkResponse = true;
 	serial1.write("#GETTHK%%%%%");
-	serial1.waitForBytesWritten(5);
-	isRecvThicknessData = true;
-	if(!timer4->isActive()) 
-	{
-		timer4->start(100);  
-	}
-	if(!timer3->isActive()) 
-	{
-		timer3->start(1000);  
-	}
+	serial1.flush();
 }
 
 
 
 
-void serial::timer_elec_quantity_slot(){
+void serial::timer_elec_quantity_slot()
+{
 	serial1.write("#GETBAT%%%%%");
+    serial1.flush();
 	qDebug()<<"send power success";
+    //返回  #EQTx%%
 }
+
 void serial::on_timer_get_wave_slot(){
+    stopThk();
 	serial1.write("#RST$%%%%%%%");
+    serial1.flush();
 	qDebug()<<"send wave success";
-	isRecvThicknessData = false;
-	if(timer4->isActive()) 
-	{
-		timer4->stop();  // 只有激活时才停止
-	}
-	if(timer3->isActive()) 
-	{
-		timer3->stop();  // 只有激活时才停止
-	}
+	
 
 }
 
@@ -569,21 +545,43 @@ void serial::onParamChanged(INT16 param_no, INT16 param_val)
 
 void serial::onReadParam(){
     serial1.write("#GET00$%%%%%");
+    serial1.flush();
     qDebug()<<"send  read_param success";
 }
 
 void serial::stopThk(){
 	serial1.write("#STOTHK%%%%%");
+    serial1.flush();
+    waitForStopThkResponse = true;
 	qDebug()<<"send stop thick success";
-	isRecvThicknessData = false;
-	if(timer4->isActive()) 
-	{
-		timer4->stop();  // 只有激活时才停止
-	}
-	if(timer3->isActive()) 
-	{
-		timer3->stop();  // 只有激活时才停止
-	}
+    //返回  #STOOK$
 
 }
+void serial::StateCheck()
+{
+    
+    //qDebug()<<"StateCheck timer tick";
+    qDebug()<<waitForStopThkResponse<<isInTimeSyncProgress<<isRecvThicknessData<<noThkResponse;
+    
+    if(timecount % 2000 == 0) //10s
+    {
+        emit getCharge();
+    }
+    if((timecount % 10 == 0) && waitForStopThkResponse && isRecvThicknessData) //50ms
+    {
+        stopThk();
+    }
+    if((timecount % 100 == 0) && isInTimeSyncProgress)  //500ms
+    {
+        timeSync();
+    }
+    if((timecount % 10 == 0) && isRecvThicknessData) //50ms 
+    {
+        if(noThkResponse)getThk();  //在接收厚度数据的过程中，如果没有收到厚度数据，则重新发送获取厚度命令，processThicknessData中收到数据后将noThkResponse置为false
+        else noThkResponse = true;  //重置标志，保证由于其他原因没有收到数据时可重复发送获取厚度命令，正常情况下processThicknessData在50ms内会收到数据并将noThkResponse置为false，不会重复发送获取厚度命令
+    }
+    
 
+    timecount = (timecount + 1) % 40000;
+    
+}
