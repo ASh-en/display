@@ -63,11 +63,12 @@ signals:
 	void startTimeSync();//ash 20250715
     void getCharge();
 	
+    void _delayUpdated(const uint16_t delta);   // 传递当前时延（毫秒级）
     void _charge(const int& data);
     void _thickness(const double& data);
 //    void _wave(const QByteArray RecvData);
     void _wave(const WAVE_DATA& cur_data);
-    void timesignal();
+    //void timesignal();
     void sendthick(double thickness_value);
     void send_para(const QByteArray &para_data);
     void send_dev_params(const DEVICE_ULTRA_PARAM_U &device_params);
@@ -112,7 +113,7 @@ public:
     QTimer *timertick;//基准时间步进 5ms
 private:
 	
-	//bool matched = false;
+	bool matched = false;
 	//bool syncInProgress = false;//ash 20250715
 	uint16_t lastSentTimestamp = 0;
     uint16_t timecount = 0;
