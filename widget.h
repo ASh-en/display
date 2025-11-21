@@ -31,7 +31,6 @@ public:
 public slots:
 
     
-    void update_para(const QByteArray &para_data);
     void onBtnMeasureClicked();
     void onBtnCalibrateClicked();
     void onBtnParamClicked();
@@ -44,11 +43,12 @@ public slots:
 
 private slots:
     void onSetStatusTxt(const QString& txt);
+    void onHoldingRegisterChanged(int address, quint16 value); // 新增槽函数处理保持寄存器变化
 
 private:
 // 测量界面核心组件
     Ui::Widget *ui;
-    ModbusServer *m_modbusServer; 
+    
     
     // 辅助函数
     void resetBtnCheckedState();
@@ -57,6 +57,14 @@ public:
     form_calibrate* pCalibrateForm;
     form_param* pParamForm;
     form_measure* pMeasureForm;
+    QTimer* p_timer_get_wave;
+    ModbusServer *m_modbusServer; 
+
+signals:
+    void send_start_thick();
+    void paramChanged(INT16 param_no, INT16 param_val); // 新增信号通知参数变化
+    void getAllParam_S();
+
 
 
 };

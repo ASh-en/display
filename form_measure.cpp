@@ -53,7 +53,7 @@ void form_measure::onRecvThhicknesData(const double& data)
     double elecCurrent = (data*16.0)/20000.0+4.0;//DAC写入值范围为0~65535，对应电流4~20mA，厚度0~20000um
     ui->ldt_thickness->setText(QString::number(data/1000.0, 'f', 3));
     if(elecCurrent>20.0) elecCurrent=20.0;
-    ui->ldt_output->setText(QString::number(elecCurrent/1000.0, 'f', 3));
+    ui->ldt_output->setText(QString::number(elecCurrent, 'f', 3));
     _dac.elec_write(elecCurrent);
     
     statusTxt = "num:" + QString::number(recvDataNum)  // 整数转字符串
@@ -61,7 +61,7 @@ void form_measure::onRecvThhicknesData(const double& data)
               + "	elec:" + QString::number(elecCurrent, 'f', 3);  // 电流值保留3位小数
     emit sendStatusText(statusTxt);
 
-    emit sendThicknessData(data);
+    emit sendThicknessData(data / 1000.0);
 }
 void form_measure::initMaterialInfo()
 {

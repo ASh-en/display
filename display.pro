@@ -35,7 +35,8 @@ SOURCES += \
     form_measure.cpp \
     form_param.cpp \
     form_calibrate.cpp \
-    material_sound_speed_manager.cpp
+    material_sound_speed_manager.cpp \
+    modbus_server.cpp
     
 
 HEADERS += \
@@ -53,7 +54,8 @@ HEADERS += \
     TimeUtils.h \
     param_define.h \
     type_define.h \
-    material_sound_speed_manager.h
+    material_sound_speed_manager.h \
+    modbus_server.h
    
 
 FORMS += \

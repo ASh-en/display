@@ -103,12 +103,12 @@ public:
 	PARAM_STRUCT_S  measureMaterial;        //31.测厚材料 0.铝 1.钛合金
 };
 
-const int PARAM_SZIE = sizeof(DEVICE_PARAM_S) / sizeof(PARAM_STRUCT_S);
+const int PARAM_SIZE = sizeof(DEVICE_PARAM_S) / sizeof(PARAM_STRUCT_S);
 //设备仪表参数
 union DEVICE_ULTRA_PARAM_U
 {
 	DEVICE_PARAM_S stParam;
 	PARAM_STRUCT_S arrParam[sizeof(DEVICE_PARAM_S) / sizeof(PARAM_STRUCT_S)];
 };
-void init_device_param(DEVICE_ULTRA_PARAM_U& deviceParam);
+
 

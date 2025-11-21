@@ -1,6 +1,8 @@
 #include "serial.h"
 #include <QThread>
 #include "TimeUtils.h"
+#include <QtEndian> // 需要包含这个头文件
+#include "param_define.h"
 
 static INT8 sendCommandList[SEND_COMMAND_LENGTH + 1];
 
@@ -13,7 +15,7 @@ serial::serial(QObject *parent) : QObject(parent)
 		qDebug() << "Manufacturer:" << info.manufacturer();
 	}
   qDebug()<<"serial info out success";
-	serial1.setPortName("ttyAMA0");  // Raspberry Pi OS(Debian Trixie) UART5 port：ttyAMA5，GPIO12(TX)，GPIO13(RX)
+	serial1.setPortName("ttyAMA5");  // Raspberry Pi OS(Debian Trixie) UART5 port：ttyAMA5，GPIO12(TX)，GPIO13(RX) ttyAMA0
 	//serial1.setPortName("ttyUSB0");  
 	serial1.setBaudRate(QSerialPort::Baud115200);
 	serial1.setDataBits(QSerialPort::Data8);
@@ -23,16 +25,14 @@ serial::serial(QObject *parent) : QObject(parent)
 	
 	QObject::connect(&serial1, &QSerialPort::readyRead,this,&serial::onReadyRead);
 	QObject::connect(this, &serial::startTimeSync, this, &serial::timeSync);
-	
-    
+	//默认开启接收厚度
+    isRecvThicknessData = true;
 
     init_device_param(mDeviceParam);
-	timer1 = new QTimer(this);
-	timer2 = new QTimer(this);
+	timer_elec_quantity = new QTimer(this);
 	timer3 = new QTimer(this);  //同步时钟，如果厚度数据超时则重新同步，timer3每秒触发一次
 	timer4 = new QTimer(this);  //获取厚度数据时钟，如果厚度数据开始发送则停止，timer4每100ms触发一次
-	connect(timer1, SIGNAL(timeout()), this, SLOT(timer1_slot()));
-	connect(timer2, SIGNAL(timeout()), this, SLOT(timer2_slot()));
+	connect(timer_elec_quantity, SIGNAL(timeout()), this, SLOT(timer_elec_quantity_slot()));
 	connect(timer3, SIGNAL(timeout()), this, SLOT(timeSync()));
 	connect(timer4, SIGNAL(timeout()), this, SLOT(getThk()));
 
@@ -70,7 +70,8 @@ void serial::onReadyRead()
 		}
 	}
 	index = m_buffer.indexOf("#TIME");
-    if (waitForSyncReply && index >= 0 && m_buffer.size() >= index + 8) 
+	//开启接收厚度数据，并且正在等待同步回复，并且缓冲区中有完整的时间同步帧
+    if (isRecvThicknessData && waitForSyncReply && index >= 0 && m_buffer.size() >= index + 8) 
     {
         ts_buffer = m_buffer.mid(index, 8);
         m_buffer.remove(index, 8);
@@ -94,7 +95,7 @@ void serial::onReadyRead()
     			timer4->start(100);  
 			}
 			syncInProgress = false;
-			waitForSyncReply = false;++
+			waitForSyncReply = false;
 			matched = false;
 			
 			return ;
@@ -123,37 +124,27 @@ void serial::onReadyRead()
 	}
 	
 	index = 0;
-//    if(((index=m_buffer.indexOf("#GET"))>=0) && m_buffer.size()>=69){//&& newData.indexOf(BEGIN_BAG_HEAD)<0
-//       while((index=m_buffer.indexOf("#EQT"))>=0 && m_buffer[index+68]=='$'){
-//           p_buffer = m_buffer.mid(index,69);
-//           m_buffer.remove(index,69);
-//           emit send_para(p_buffer);
-//       }
-//      }
-
-	while((index=m_buffer.indexOf("#GET"))>=0 && m_buffer.size()>69){
+	const int PARAM_BUFFER_LENGTH = PARAM_SIZE *sizeof(INT16) + 5;
+	while((index=m_buffer.indexOf("#GET"))>=0 && m_buffer.size()> PARAM_BUFFER_LENGTH){
 		index_2 = 0;
 		if((index_2=m_buffer.indexOf("#GET", index+1))>=0){
 			qDebug()<<index<<index_2;
-			if((index_2-index)>0 && (index_2-index)<69){
+			if((index_2-index)>0 && (index_2-index)<PARAM_BUFFER_LENGTH){
 				m_buffer.remove(index,index_2-index);
-				qDebug()<<"hello 1";
+				
 			}else{
-				qDebug()<<"hello 2";
-				p_buffer = m_buffer.mid(index,69);
-				qDebug()<<"hello3";
-				m_buffer.remove(index,69);
-				qDebug()<<"hello4";
-                emit send_para(p_buffer);
-				qDebug()<<"hello 3";
+				p_buffer = m_buffer.mid(index,PARAM_BUFFER_LENGTH);
+				m_buffer.remove(index,PARAM_BUFFER_LENGTH);
+                //emit send_para(p_buffer);
+				processParamData(p_buffer);
 			}
 		} else if(((index_2=m_buffer.indexOf("#GET", index+1))<0) && m_buffer[index+68]=='$'){
-			qDebug()<<"hello 2";
-			p_buffer = m_buffer.mid(index,69);
-			qDebug()<<"hello3";
-			m_buffer.remove(index,69);
-			qDebug()<<"hello4";
-			emit send_para(p_buffer);
+			
+			p_buffer = m_buffer.mid(index,PARAM_BUFFER_LENGTH);
+			
+			m_buffer.remove(index,PARAM_BUFFER_LENGTH);
+			processParamData(p_buffer);
+			//emit send_para(p_buffer);
 		}else{
 			break;
 		}
@@ -211,102 +202,105 @@ void serial::onReadyRead()
 
 void serial::init_device_param(DEVICE_ULTRA_PARAM_U& deviceParam)
 {
-    deviceParam.stParam.gate2End.index = 0;
-    deviceParam.stParam.gate2End.value = 300;
 
-    deviceParam.stParam.zeroPointEnvelope.index = 1;
-    deviceParam.stParam.zeroPointEnvelope.value = 2470;
+	//参数项与现有协议不符合，所以先注释掉
+    // deviceParam.stParam.gate2End.index = 0;
+    // deviceParam.stParam.gate2End.value = 300;
 
-    deviceParam.stParam.ultraSpeed.index = 2;
-    deviceParam.stParam.ultraSpeed.value = 32500;
+    // deviceParam.stParam.zeroPointEnvelope.index = 1;
+    // deviceParam.stParam.zeroPointEnvelope.value = 2470;
 
-    deviceParam.stParam.zeroPointOrigin.index = 3;
-    deviceParam.stParam.zeroPointOrigin.value = 2470;
+    // deviceParam.stParam.ultraSpeed.index = 2;
+    // deviceParam.stParam.ultraSpeed.value = 32500;
 
-    deviceParam.stParam.gate2Start.index = 4;
-    deviceParam.stParam.gate2Start.value = 200;
+    // deviceParam.stParam.zeroPointOrigin.index = 3;
+    // deviceParam.stParam.zeroPointOrigin.value = 2470;
 
-    deviceParam.stParam.gate1Start.index = 5;
-    deviceParam.stParam.gate1Start.value = 100;
+    // deviceParam.stParam.gate2Start.index = 4;
+    // deviceParam.stParam.gate2Start.value = 200;
 
-    deviceParam.stParam.gate1End.index = 6;
-    deviceParam.stParam.gate1End.value = 180;
+    // deviceParam.stParam.gate1Start.index = 5;
+    // deviceParam.stParam.gate1Start.value = 100;
 
-    deviceParam.stParam.calibrationThick.index = 7;
-    deviceParam.stParam.calibrationThick.value = 1200;
+    // deviceParam.stParam.gate1End.index = 6;
+    // deviceParam.stParam.gate1End.value = 180;
 
-    deviceParam.stParam.temperature.index = 8;
-    deviceParam.stParam.temperature.value = 25;
+    // deviceParam.stParam.calibrationThick.index = 7;
+    // deviceParam.stParam.calibrationThick.value = 1200;
 
-    deviceParam.stParam.curveSmooth.index = 9;
-    deviceParam.stParam.curveSmooth.value = USING_CURVE_SMOOTH;
+    // deviceParam.stParam.temperature.index = 8;
+    // deviceParam.stParam.temperature.value = 25;
 
-    deviceParam.stParam.smoothTime.index = 10;
-    deviceParam.stParam.smoothTime.value = 4;
+    // deviceParam.stParam.curveSmooth.index = 9;
+    // deviceParam.stParam.curveSmooth.value = USING_CURVE_SMOOTH;
 
-    deviceParam.stParam.sensorGain.index = 11;
-    deviceParam.stParam.sensorGain.value = 300;
+    // deviceParam.stParam.smoothTime.index = 10;
+    // deviceParam.stParam.smoothTime.value = 4;
 
-    deviceParam.stParam.ferqSelect.index = 12;
-    deviceParam.stParam.ferqSelect.value = LOW_FREQUENCY;
+    // deviceParam.stParam.sensorGain.index = 11;
+    // deviceParam.stParam.sensorGain.value = 300;
 
-    deviceParam.stParam.waveType.index = 13;
-    deviceParam.stParam.waveType.value = ORIGIN_WAVE;
+    // deviceParam.stParam.ferqSelect.index = 12;
+    // deviceParam.stParam.ferqSelect.value = LOW_FREQUENCY;
 
-    deviceParam.stParam.measureMode.index = 14;
-    deviceParam.stParam.measureMode.value = MEASURE_AUTO;
+    // deviceParam.stParam.waveType.index = 13;
+    // deviceParam.stParam.waveType.value = ORIGIN_WAVE;
 
-    deviceParam.stParam.SNR.index = 15;
-    deviceParam.stParam.SNR.value = 10;
+    // deviceParam.stParam.measureMode.index = 14;
+    // deviceParam.stParam.measureMode.value = MEASURE_AUTO;
 
-    deviceParam.stParam.dampingRadio.index = 16;
-    deviceParam.stParam.dampingRadio.value = 10;
+    // deviceParam.stParam.SNR.index = 15;
+    // deviceParam.stParam.SNR.value = 10;
 
-    deviceParam.stParam.envelopeWidth.index = 17;
-    deviceParam.stParam.envelopeWidth.value = 2470;
+    // deviceParam.stParam.dampingRadio.index = 16;
+    // deviceParam.stParam.dampingRadio.value = 10;
 
-    deviceParam.stParam.widthHeightRadio.index = 18;
-    deviceParam.stParam.widthHeightRadio.value = 10;
+    // deviceParam.stParam.envelopeWidth.index = 17;
+    // deviceParam.stParam.envelopeWidth.value = 2470;
 
-    deviceParam.stParam.thresholdValue.index = 19;
-    deviceParam.stParam.thresholdValue.value = 10;
+    // deviceParam.stParam.widthHeightRadio.index = 18;
+    // deviceParam.stParam.widthHeightRadio.value = 10;
 
-    deviceParam.stParam.emitInterval.index = 20;
-    deviceParam.stParam.emitInterval.value = 1000;
+    // deviceParam.stParam.thresholdValue.index = 19;
+    // deviceParam.stParam.thresholdValue.value = 10;
 
-    deviceParam.stParam.pulseNumber.index = 21;
-    deviceParam.stParam.pulseNumber.value = 2;
+    // deviceParam.stParam.emitInterval.index = 20;
+    // deviceParam.stParam.emitInterval.value = 1000;
 
-    deviceParam.stParam.excitationFrequency.index = 22;
-    deviceParam.stParam.excitationFrequency.value = 500;
+    // deviceParam.stParam.pulseNumber.index = 21;
+    // deviceParam.stParam.pulseNumber.value = 2;
 
-    deviceParam.stParam.startDisplay.index = 23;
-    deviceParam.stParam.startDisplay.value = 2;
+    // deviceParam.stParam.excitationFrequency.index = 22;
+    // deviceParam.stParam.excitationFrequency.value = 500;
 
-    deviceParam.stParam.stopDisplay.index = 24;
-    deviceParam.stParam.stopDisplay.value = 30;
+    // deviceParam.stParam.startDisplay.index = 23;
+    // deviceParam.stParam.startDisplay.value = 2;
 
-    deviceParam.stParam.communicateMode.index = 25;
-    deviceParam.stParam.communicateMode.value = 0;
+    // deviceParam.stParam.stopDisplay.index = 24;
+    // deviceParam.stParam.stopDisplay.value = 30;
 
-    deviceParam.stParam.measureControlMode.index = 26;
-    deviceParam.stParam.measureControlMode.value = PP_CONTROL_MODE;
+    // deviceParam.stParam.communicateMode.index = 25;
+    // deviceParam.stParam.communicateMode.value = 0;
 
-    deviceParam.stParam.manualMeasureMode.index = 27;
-    deviceParam.stParam.manualMeasureMode.value = MANUAL_PP_CONTROL_MODE;
+    // deviceParam.stParam.measureControlMode.index = 26;
+    // deviceParam.stParam.measureControlMode.value = PP_CONTROL_MODE;
 
-    deviceParam.stParam.lcdDisplayTxt.index = 28;
-    deviceParam.stParam.lcdDisplayTxt.value = DISPLAY_THICKNESS;
+    // deviceParam.stParam.manualMeasureMode.index = 27;
+    // deviceParam.stParam.manualMeasureMode.value = MANUAL_PP_CONTROL_MODE;
 
-    deviceParam.stParam.selfMultiplying.index = 29;
-    deviceParam.stParam.selfMultiplying.value = SELF_MULTIPLYING;
+    // deviceParam.stParam.lcdDisplayTxt.index = 28;
+    // deviceParam.stParam.lcdDisplayTxt.value = DISPLAY_THICKNESS;
 
-    deviceParam.stParam.lcdDisplayTxt.index = 30;
-    deviceParam.stParam.thicknessSmooth.value = 30;
+    // deviceParam.stParam.selfMultiplying.index = 29;
+    // deviceParam.stParam.selfMultiplying.value = SELF_MULTIPLYING;
 
-    deviceParam.stParam.lcdDisplayTxt.index = 31;
-    deviceParam.stParam.thicknessSmooth.value = TITANIUM_ALLOY;
+    // deviceParam.stParam.lcdDisplayTxt.index = 30;
+    // deviceParam.stParam.thicknessSmooth.value = 30;
+
+    // deviceParam.stParam.lcdDisplayTxt.index = 31;
+    // deviceParam.stParam.thicknessSmooth.value = TITANIUM_ALLOY;
 }
+
 void serial::processChargeData()
 {
 	char c = c_buffer[4];
@@ -315,14 +309,24 @@ void serial::processChargeData()
 	c_buffer.clear(); // 移除已处理的数据
 }
 
-//void serial::processParamData()
-//{
-//    for (int i = 0; i < PARAM_SZIE; i++)
-//    {
-//        mDeviceParam.arrParam[i].index = i;
-//        mDeviceParam.arrParam[i].value = curRecvData.arrResult[i];
-//    }
-//}
+void serial::processParamData(const QByteArray &para_data)
+{
+    if (para_data.size() < sizeof(DEVICE_PARAM_S) / sizeof(PARAM_STRUCT_S) * 2) {
+        qDebug() << "参数数据长度不足，无法解析。";
+        return;
+    }
+
+    const char *dataPtr = para_data.constData();
+
+    for (int i = 0; i < PARAM_SIZE; i++) {
+        // qFromBigEndian 会从指定地址读取 sizeof(T) 个字节，并转换为本地字节序
+        quint16 value = qFromBigEndian<quint16>(dataPtr + i * 2);
+        mDeviceParam.arrParam[i].index = i;
+        mDeviceParam.arrParam[i].value = value;
+    }
+	emit send_dev_params(mDeviceParam);
+
+}
 
 void serial::processThicknessData()
 {
@@ -497,18 +501,37 @@ void serial::getThk()
 {
 	serial1.write("#GETTHK%%%%%");
 	serial1.waitForBytesWritten(5);
+	isRecvThicknessData = true;
+	if(!timer4->isActive()) 
+	{
+		timer4->start(100);  
+	}
+	if(!timer3->isActive()) 
+	{
+		timer3->start(1000);  
+	}
 }
 
 
 
 
-void serial::timer1_slot(){
+void serial::timer_elec_quantity_slot(){
 	serial1.write("#GETBAT%%%%%");
 	qDebug()<<"send power success";
 }
-void serial::timer2_slot(){
+void serial::on_timer_get_wave_slot(){
 	serial1.write("#RST$%%%%%%%");
 	qDebug()<<"send wave success";
+	isRecvThicknessData = false;
+	if(timer4->isActive()) 
+	{
+		timer4->stop();  // 只有激活时才停止
+	}
+	if(timer3->isActive()) 
+	{
+		timer3->stop();  // 只有激活时才停止
+	}
+
 }
 
 void serial::onParamChanged(INT16 param_no, INT16 param_val)
@@ -544,9 +567,23 @@ void serial::onParamChanged(INT16 param_no, INT16 param_val)
     qDebug() << "onParamChanged" << hexStr.trimmed(); 
 }
 
-void serial::onReadParam(INT16 param_no){
+void serial::onReadParam(){
     serial1.write("#GET00$%%%%%");
     qDebug()<<"send  read_param success";
 }
 
+void serial::stopThk(){
+	serial1.write("#STOTHK%%%%%");
+	qDebug()<<"send stop thick success";
+	isRecvThicknessData = false;
+	if(timer4->isActive()) 
+	{
+		timer4->stop();  // 只有激活时才停止
+	}
+	if(timer3->isActive()) 
+	{
+		timer3->stop();  // 只有激活时才停止
+	}
+
+}
 

@@ -68,24 +68,28 @@ signals:
     void timesignal();
     void sendthick(double thickness_value);
     void send_para(const QByteArray &para_data);
+    void send_dev_params(const DEVICE_ULTRA_PARAM_U &device_params);
 public slots:
     void emitsignal();
     void ReadData();
     void tcpRecData(const QByteArray& buf);
     void onReadyRead();
-    void timer1_slot();
-    void timer2_slot();
+    void timer_elec_quantity_slot();
+    void on_timer_get_wave_slot();
 	void timeSync();
 	void getThk();
     void onParamChanged(INT16 param_no, INT16 param_val);
-    void onReadParam(INT16 param_no);
+    void onReadParam();
+    void stopThk();
+
 private:
     void processBuffer();
     void processChargeData();
     void processThicknessData();
     void processWaveData();
-    void processParamData();
+    void processParamData(const QByteArray &para_data);
     void init_device_param(DEVICE_ULTRA_PARAM_U& deviceParam);
+    bool isRecvThicknessData;
 public:
     QSerialPort serial1;
     QByteArray RecvData;
@@ -94,8 +98,7 @@ public:
     QByteArray Recv_wave_Data;
     QByteArray Recv_loding_Data;
     double thickness_value;
-    QTimer *timer1;
-    QTimer *timer2;
+    QTimer *timer_elec_quantity; //
 	QTimer *timer3; //同步时钟
 	QTimer *timer4;	//获取厚度时钟
 private:

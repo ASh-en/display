@@ -31,6 +31,7 @@ Widget::Widget(QWidget *parent) :
     connect(ui->btn_reboot, &QPushButton::clicked, this,&Widget::onBtnRebootClicked);
     connect(ui->btn_connect, &QPushButton::clicked, this, &Widget::onBtnConnectClicked);
     connect(pMeasureForm,&form_measure::sendStatusText, this ,&Widget::onSetStatusTxt);
+    p_timer_get_wave = new QTimer(this);
 
     // 连接厚度数据信号到Modbus服务器
     connect(pMeasureForm, &form_measure::sendThicknessData, this, &Widget::onThicknessDataChanged); 
@@ -47,17 +48,30 @@ Widget::~Widget()
     delete ui;
 
 }
+void Widget::onHoldingRegisterChanged(int address, quint16 value)
+{
+    // 处理保持寄存器的数值变化，并发送信号
+    qDebug() << "保持寄存器地址" << address << "的值已更改为" << value;
+
+    // 发出信号通知参数变化
+    emit paramChanged((INT16)address, value);
+}
 
 void Widget::initModbusServer()
 {
     m_modbusServer = new ModbusServer(this);
     
     // 启动Modbus TCP服务器，监听所有地址，端口502
-    if (!m_modbusServer->startServer("192.168.0.1", 502)) {
+    if (!m_modbusServer->startServer(QHostAddress::Any, 502)) 
+    {
         qDebug() << "Modbus服务器初始化失败";
     } else {
         qDebug() << "Modbus服务器初始化成功";
     }
+    
+    connect(m_modbusServer, &ModbusServer::holdingRegisterChanged, 
+    this, &Widget::onHoldingRegisterChanged);
+    
 }
 
 
@@ -69,15 +83,14 @@ void Widget::onThicknessDataChanged(const double& thickness)
     }
 }
 
-void Widget::update_para(const QByteArray &para_data){
-
-}
-
 void Widget::onBtnMeasureClicked()
 {
     resetBtnCheckedState();
     ui->btnMeasure->setChecked(true);
     ui->stackedWidget->setCurrentWidget(pMeasureForm);
+    if(p_timer_get_wave->isActive()){
+        p_timer_get_wave->stop();
+    }
 }
 
 void Widget::onBtnCalibrateClicked()
@@ -85,6 +98,12 @@ void Widget::onBtnCalibrateClicked()
     resetBtnCheckedState();
     ui->btnCalibrate->setChecked(true);
     ui->stackedWidget->setCurrentWidget(pCalibrateForm);
+    if (p_timer_get_wave->isActive())
+    {
+        p_timer_get_wave->stop();
+        emit send_start_thick();
+    }
+    
 }
 
 void Widget::onBtnParamClicked()
@@ -92,6 +111,10 @@ void Widget::onBtnParamClicked()
     resetBtnCheckedState();
     ui->btnParam->setChecked(true);
     ui->stackedWidget->setCurrentWidget(pParamForm);
+    if (!p_timer_get_wave->isActive())
+    {
+        p_timer_get_wave->start(2000); 
+    }
 }
 
 void Widget::resetBtnCheckedState()
@@ -99,6 +122,11 @@ void Widget::resetBtnCheckedState()
     ui->btnMeasure->setChecked(false);
     ui->btnCalibrate->setChecked(false);
     ui->btnParam->setChecked(false);
+    if (p_timer_get_wave->isActive())
+    {
+        p_timer_get_wave->stop();
+        emit send_start_thick();
+    }
 }
 
 //控制树莓派进行关机
@@ -107,75 +135,80 @@ void Widget::onBtnPoweroffClicked()
     QProcess::startDetached("sudo shutdown -h now");
 }
 
-//控制树莓派进行重启
+// 控制树莓派重启（同时重启当前程序）
 void Widget::onBtnRebootClicked()
 {
-    // 1. 查看串口ttyAMA0的占用进程，获取PID（进程ID）
+    // 1. 获取当前程序的绝对路径（无需写死路径）
+    QString appPath = QCoreApplication::applicationFilePath();
+    qDebug() << "当前程序路径：" << appPath;
+
+    // 2. 查看串口 ttyAMA5 的占用进程（获取 PID）
     QProcess lsofProcess;
-    // 使用lsof命令查看占用/dev/ttyAMA0的进程（需sudo权限）
-    lsofProcess.start("sudo lsof /dev/ttyAMA0");
-    // 等待命令执行完成（超时5秒）
+    lsofProcess.start("sudo systemctl restart start-display.service");
     if (!lsofProcess.waitForFinished(5000)) {
         qDebug() << "获取串口占用进程失败：" << lsofProcess.errorString();
         return;
     }
 
-    // 读取命令输出（标准输出和错误输出）
-    QString output = lsofProcess.readAllStandardOutput();
-    QString error = lsofProcess.readAllStandardError();
-    if (!error.isEmpty()) {
-        qDebug() << "lsof命令错误输出：" << error;
-    }
+    // // 解析 lsof 输出，提取 PID
+    // QString output = lsofProcess.readAllStandardOutput();
+    // QString error = lsofProcess.readAllStandardError();
+    // if (!error.isEmpty()) {
+    //     qDebug() << "lsof 命令错误：" << error;
+    // }
 
-    // 解析输出，提取PID（lsof输出格式：COMMAND  PID USER ...）
-    QStringList lines = output.split("\n", QString::SkipEmptyParts);
-    QList<int> pids; // 存储占用串口的进程ID
-    if (lines.size() > 1) { // 第一行为标题行，跳过
-        for (int i = 1; i < lines.size(); ++i) {
-            QString line = lines[i].trimmed();
-            // 按空格分割行内容（多个空格视为一个分隔符）
-            QStringList parts = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
-            if (parts.size() >= 2) { // 确保有足够的字段
-                bool ok;
-                int pid = parts[1].toInt(&ok); // 第二列是PID
-                if (ok) {
-                    pids.append(pid);
-                    qDebug() << "发现占用ttyAMA0的进程PID：" << pid;
-                }
-            }
-        }
-    }
+    // QStringList lines = output.split("\n", QString::SkipEmptyParts);
+    // QList<int> pids;
+    // if (lines.size() > 1) { // 跳过标题行
+    //     for (int i = 1; i < lines.size(); ++i) {
+    //         QStringList parts = lines[i].trimmed().split(QRegExp("\\s+"), QString::SkipEmptyParts);
+    //         if (parts.size() >= 2) {
+    //             bool ok;
+    //             int pid = parts[1].toInt(&ok);
+    //             if (ok) {
+    //                 pids.append(pid);
+    //                 qDebug() << "发现占用 ttyAMA5 的进程 PID：" << pid;
+    //             }
+    //         }
+    //     }
+    // }
+    // if (pids.isEmpty()) {
+    //     qDebug() << "未发现占用 ttyAMA5 的进程";
+    // }
 
-    if (pids.isEmpty()) {
-        qDebug() << "未发现占用ttyAMA0的进程";
-    }
+    // // 3. 启动新的程序实例（用获取到的路径）
+    // bool isStarted = QProcess::startDetached(appPath);
+    // if (!isStarted) {
+    //     qDebug() << "启动新程序失败！路径：" << appPath;
+    //     return;
+    // }
+    // qDebug() << "新程序已启动：" << appPath;
 
-    // 2. 启动新的软件实例（重启前先启动新程序，避免kill后无法启动）
-    QString appPath = "/home/pi/qt/display/display"; // 软件路径
-    bool isStarted = QProcess::startDetached(appPath); // 独立启动新进程
-    if (!isStarted) {
-        qDebug() << "启动新软件失败！路径：" << appPath;
-        return;
-    }
-    qDebug() << "新软件已启动：" << appPath;
-
-    // 3. 杀掉所有占用串口的旧进程（包括当前程序自身）
-    foreach (int pid, pids) {
-        QProcess killProcess;
-        killProcess.start("sudo kill -9 " + QString::number(pid)); // -9强制终止
-        if (killProcess.waitForFinished(2000)) { // 等待2秒
-            qDebug() << "已终止进程PID：" << pid;
-        } else {
-            qDebug() << "终止进程PID失败：" << pid << "错误：" << killProcess.errorString();
-        }
-    }
-    // 主动退出当前程序（可选，因为kill -9已强制终止）
-    qApp->quit();
+    // // 4. 终止所有占用串口的旧进程（包括当前程序）
+    // foreach (int pid, pids) {
+    //     QProcess killProcess;
+    //     killProcess.start("sudo kill -9 " + QString::number(pid));
+    //     if (killProcess.waitForFinished(2000)) {
+    //         qDebug() << "已终止进程 PID：" << pid;
+    //     } else {
+    //         qDebug() << "终止进程 PID 失败：" << pid << "错误：" << killProcess.errorString();
+    //     }
+    // }
+    // // 主动退出当前程序（可选，kill -9 已强制终止）
+    // qApp->quit();
 }
 /**槽函数：重新连接串口 */
  void Widget::onBtnConnectClicked()
  {
-    
+    //先获取参数
+    emit getAllParam_S();
+    //sleep(1000);
+
+     if (p_timer_get_wave->isActive())
+    {
+        p_timer_get_wave->stop();
+        emit send_start_thick();
+    }
  }
 
 

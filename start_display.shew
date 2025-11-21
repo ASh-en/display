@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# 可选：设置日志路径或导出环境变量
+# export LD_LIBRARY_PATH=...
+
+# 进入工作目录
+cd /home/pi/Workspace/display-loss-test/
+
+# 启动程序
+./display
+

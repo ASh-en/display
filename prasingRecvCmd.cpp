@@ -132,7 +132,7 @@ int prasingGetAllParam(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvDa
 	{
 		return -1;
 	}
-	if ((GET_RECV_PARAM_CMD_HEAD.length() + sizeof(GET_RECV_PARAM_CMD_TAIL) + PARAM_SZIE * sizeof(short)) > dataLen - pos)
+	if ((GET_RECV_PARAM_CMD_HEAD.length() + sizeof(GET_RECV_PARAM_CMD_TAIL) + PARAM_SIZE * sizeof(short)) > dataLen - pos)
 	{
 		return -1;
 	}
@@ -146,21 +146,21 @@ int prasingGetAllParam(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvDa
 	}
 	for (int i = 0; i < sizeof(GET_RECV_PARAM_CMD_TAIL); i++)
 	{
-		if (GET_RECV_PARAM_CMD_TAIL[i] != recvBuff[pos + GET_RECV_PARAM_CMD_HEAD.length() + PARAM_SZIE * sizeof(short) + i])
+		if (GET_RECV_PARAM_CMD_TAIL[i] != recvBuff[pos + GET_RECV_PARAM_CMD_HEAD.length() + PARAM_SIZE * sizeof(short) + i])
 		{
 			return -1;
 		}
 	}
 	curRecvData.cmdType = RECV_COMMAND_GET_ALL_PARAM;
 	pData = (INT16*)&recvBuff[pos + GET_RECV_PARAM_CMD_HEAD.length()];
-	for (int i = 0; i < PARAM_SZIE; i++)
+	for (int i = 0; i < PARAM_SIZE; i++)
 	{
 		curRecvData.arrResult[i] = convertToLittleBigEndian(pData[i]);
 	}
 	//memcpy_s(curRecvData.arrResult, sizeof(curRecvData.arrResult), 
-	//	&recvBuff[sizeof(GET_RECV_PARAM_CMD_HEAD)], PARAM_SZIE * sizeof(short));
-	curRecvData.recvDataLen = PARAM_SZIE;
-	return GET_RECV_PARAM_CMD_HEAD.length() + sizeof(GET_RECV_PARAM_CMD_TAIL) + PARAM_SZIE * sizeof(short);
+	//	&recvBuff[sizeof(GET_RECV_PARAM_CMD_HEAD)], PARAM_SIZE * sizeof(short));
+	curRecvData.recvDataLen = PARAM_SIZE;
+	return GET_RECV_PARAM_CMD_HEAD.length() + sizeof(GET_RECV_PARAM_CMD_TAIL) + PARAM_SIZE * sizeof(short);
 
 }
 int prasingSetParam(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos)

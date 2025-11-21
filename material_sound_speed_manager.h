@@ -10,7 +10,7 @@ class MaterialSoundSpeedManager
 {
 public:
     // 构造函数：传入JSON配置文件路径（默认使用"material_sound_speed.json"）
-    explicit MaterialSoundSpeedManager(const QString& configPath = "/home/pi/qt/display/material_sound_speed.json");
+    explicit MaterialSoundSpeedManager(const QString& configPath = "./material_sound_speed.json");
 
     // 1. 获取当前材料及声速（返回pair：<材料名称, 声速>，声速为-1表示获取失败）
     QPair<QString, double> getCurrentMaterialAndSpeed();

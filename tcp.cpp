@@ -86,14 +86,11 @@ void tcp::removeClient()
     }
 }
 void tcp::send_para_tcp(const QByteArray &send_para){
-    qDebug()<<"hello5";
     if (!clientsock || !clientsock->isOpen()) {
-    qDebug()<<"hell7o";
         qDebug() << "Client is not connected";
         return;
     }
     qDebug()<<"tcp rev"<<send_para;
-    qDebug()<<"hell7o";
     clientsock->write(send_para);
-    qDebug()<<"hell7o";
+    
 }

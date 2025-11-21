@@ -6,7 +6,7 @@
 #include "type_define.h"
 #include "param_define.h"
 #include <QVector>
-#include <QString
+#include <QString>
 
 namespace Ui {
 class form_param;
@@ -25,13 +25,12 @@ private:
     void initPlotGraph();
     QTimer* pTimer;
     QCPItemText* textLabel;
-    void updatePlotGraph(const WAVE_DATA& waveData);
+   
     void set_signal_connect_slot();
    
 
 public slots:
-   void onRecvWaveData(const WAVE_DATA& cur_data);
-   void update_para(const QByteArray &para_data);
+    void updatePlotGraph(const WAVE_DATA& waveData);
 private slots:
    void ptn_clicked_send_param_slots();
    void ptn_clicked_read_param_slots();
