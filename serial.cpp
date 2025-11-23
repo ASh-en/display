@@ -4,6 +4,21 @@
 #include <QtEndian> // 需要包含这个头文件
 #include "param_define.h"
 
+
+
+short convertToLittleBigEndian(short data)
+{
+	char a[2];
+	short* result;
+	char* tmp = (char*)&data;
+	a[0] = tmp[1];
+	a[1] = tmp[0];
+
+	result = (short*)a;
+
+	return *result;
+}
+
 static INT8 sendCommandList[SEND_COMMAND_LENGTH + 1];
 
 serial::serial(QObject *parent) : QObject(parent)
@@ -78,7 +93,7 @@ void serial::onReadyRead()
 			t_buffer = m_buffer.mid(index,LEN_TH);
 			m_buffer.remove(index,LEN_TH);
 
-			processThicknessData();
+			processThicknessData(index);
 		}
 	}
 
@@ -165,8 +180,8 @@ void serial::onReadyRead()
 		qDebug()<<"w_buffer size:"<<w_buffer.size();
 		processWaveData();
 	}
-	qDebug()<<"wave size:"<<w_buffer.size();
-	qDebug()<<"wava data:"<<w_buffer;
+	//qDebug()<<"wave size:"<<w_buffer.size();
+	//qDebug()<<"wava data:"<<w_buffer;
 	//qDebug()<<"wave tail 1:"<<m_buffer[m_buffer.indexOf(WAVE_TAIL)+12];
 	//qDebug()<<"wave tail 2:"<<m_buffer[m_buffer.indexOf(WAVE_TAIL)+13];
 
@@ -309,7 +324,7 @@ void serial::processParamData(const QByteArray &para_data)
 
 }
 
-void serial::processThicknessData()
+void serial::processThicknessData(int index)
 {
 	noThkResponse = false;
 	
@@ -326,6 +341,7 @@ void serial::processThicknessData()
 		testRate = 100.0 * testloss / testTotal;
 		if(lossdelta != 0)
 		{
+            m_buffer.remove(0, index);  //Todo:丢弃当前数据包之前的数据，可能会导致其他数据（主要为电量数据）被遗弃,需要进一步优化
 			qDebug().noquote() << QString("Delta: %1 Total: %2 Loss Rate: %3%")
 								  .arg(lossdelta)
 								  .arg(testTotal)
@@ -346,7 +362,7 @@ void serial::processThicknessData()
 			//uint16_t now = 5500;
 			uint16_t timestamp = (t_buffer[6] << 8) | t_buffer[7];
 			uint16_t delta = now > timestamp ? (now - timestamp) : (now + 60000 - timestamp);
-			qDebug()<<"recv th:"<<t_buffer;
+			//qDebug()<<"recv th:"<<t_buffer;
 			qDebug()<<"now: "<< now << "timestamp: " << timestamp <<"delta: " << delta;
             emit _delayUpdated(delta);
 			if(delta > 400)
@@ -359,7 +375,11 @@ void serial::processThicknessData()
 				if (consecutiveTimeouts >= 10) 
 				{
                     consecutiveTimeouts = 0;        // 触发后立即清零
-                    stopThk();                      // 停止获取厚度数据
+                    if(!waitForStopThkResponse)
+                    {
+                        stopThk();                      // 停止获取厚度数据
+                    }
+                    
                     matched = false;
 					if(!isInTimeSyncProgress)
 					{
@@ -406,31 +426,21 @@ void serial::processTimeSync()
     else
     {
         // 时间戳不匹配，重新触发校时
+        qDebug() << "Time synchronized failed. Retrying...";
         emit startTimeSync();
     }
     ts_buffer.clear(); // 移除已处理的数据
 }
 
-short convertToLittleBigEndian(short data)
-{
-	char a[2];
-	short* result;
-	char* tmp = (char*)&data;
-	a[0] = tmp[1];
-	a[1] = tmp[0];
 
-	result = (short*)a;
-
-	return *result;
-}
 
 void serial::processWaveData()
 {
 	WAVE_DATA cur_data = { 0 };
-	qDebug()<<"success";
+	qDebug()<<"processWaveData called";
 	// 处理波形数据匿        
 	if (w_buffer.size() == sizeof(WAVE_DATA) + sizeof (HEAD_READ_WAVE) + 1 +sizeof(TAIL_READ_WAVE)){
-		qDebug()<<"success";
+		qDebug()<<"process wave data";
 		char* buf = w_buffer.data();
 		short* p_data = (short*) (&buf[sizeof (HEAD_READ_WAVE) + 1]);
 		cur_data.thickness = convertToLittleBigEndian(p_data[0]);
@@ -499,9 +509,19 @@ void serial::getThk()
                                                 // 以确保最后一次接收到的厚度数据不会长期保持为有效状态。
     serial1.write("#GETTHK%%%%%");
 	serial1.flush();
+    qDebug()<<"send get thick success";
 }
 
+void serial::stopThk()
+{
+    
+	serial1.write("#STOTHK%%%%%");
+    serial1.flush();
+    waitForStopThkResponse = true;
+	qDebug()<<"send stop thick success";
+    //返回  #STOOK$
 
+}
 
 
 void serial::timer_elec_quantity_slot()
@@ -560,21 +580,12 @@ void serial::onReadParam(){
     qDebug()<<"send  read_param success";
 }
 
-void serial::stopThk()
-{
-    
-	serial1.write("#STOTHK%%%%%");
-    serial1.flush();
-    waitForStopThkResponse = true;
-	qDebug()<<"send stop thick success";
-    //返回  #STOOK$
 
-}
 void serial::StateCheck()
 {
     
     // qDebug()<<"StateCheck timer tick";
-    if(timecount % 200 == 0)
+    if(timecount % 200 == 0)//1s
     {
        qDebug()<<waitForStopThkResponse<<isInTimeSyncProgress<<isRecvThicknessData<<noThkResponse;
     }
@@ -591,10 +602,11 @@ void serial::StateCheck()
     {
         emit startTimeSync();     //连接按钮，可使用该函数,如果matched标志位为true，则为连接状态，
     }
-    if((timecount % 10 == 0) && isRecvThicknessData) //50ms 
+    if((timecount % 50 == 0) && (!waitForStopThkResponse) && isRecvThicknessData) //250ms 
     {
         if(noThkResponse)getThk();  //在接收厚度数据的过程中，如果没有收到厚度数据，则重新发送获取厚度命令，processThicknessData中收到数据后将noThkResponse置为false
-        else noThkResponse = true;  //重置标志，保证由于其他原因没有收到数据时可重复发送获取厚度命令，正常情况下processThicknessData在50ms内会收到数据并将noThkResponse置为false，不会重复发送获取厚度命令
+        else noThkResponse = true;  //重置标志，保证由于其他原因没有收到数据时可重复发送获取厚度命令，正常情况下processThicknessData在250ms内会收到数据并将noThkResponse置为false，不会重复发送获取厚度命令
+                                    //可修改为判断当前时间与上次收到厚度数据时间的差值是否超过250ms，该判断需要增加一个变量记录上次收到厚度数据的时间
     }
     
 

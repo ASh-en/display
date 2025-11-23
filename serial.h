@@ -93,7 +93,7 @@ private:
     bool noThkResponse = false;
     void processBuffer();
     void processChargeData();
-    void processThicknessData();
+    void processThicknessData(int index);
     void processWaveData();
     void processParamData(const QByteArray &para_data);
     void processTimeSync();
