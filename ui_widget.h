@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'widget.ui'
 **
-** Created by: Qt User Interface Compiler version 5.11.3
+** Created by: Qt User Interface Compiler version 5.15.15
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -45,21 +45,21 @@ public:
     void setupUi(QWidget *Widget)
     {
         if (Widget->objectName().isEmpty())
-            Widget->setObjectName(QStringLiteral("Widget"));
+            Widget->setObjectName(QString::fromUtf8("Widget"));
         Widget->resize(480, 320);
         layoutWidget = new QWidget(Widget);
-        layoutWidget->setObjectName(QStringLiteral("layoutWidget"));
+        layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
         layoutWidget->setGeometry(QRect(1, 2, 471, 311));
         verticalLayout = new QVBoxLayout(layoutWidget);
         verticalLayout->setSpacing(6);
         verticalLayout->setContentsMargins(11, 11, 11, 11);
-        verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
+        verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
         verticalLayout->setContentsMargins(0, 0, 0, 0);
         horizontalLayout_2 = new QHBoxLayout();
         horizontalLayout_2->setSpacing(6);
-        horizontalLayout_2->setObjectName(QStringLiteral("horizontalLayout_2"));
+        horizontalLayout_2->setObjectName(QString::fromUtf8("horizontalLayout_2"));
         label = new QLabel(layoutWidget);
-        label->setObjectName(QStringLiteral("label"));
+        label->setObjectName(QString::fromUtf8("label"));
         label->setEnabled(true);
         QFont font;
         font.setPointSize(12);
@@ -71,7 +71,7 @@ public:
         horizontalLayout_2->addWidget(label);
 
         lbl_connect_status = new QLabel(layoutWidget);
-        lbl_connect_status->setObjectName(QStringLiteral("lbl_connect_status"));
+        lbl_connect_status->setObjectName(QString::fromUtf8("lbl_connect_status"));
         lbl_connect_status->setFont(font);
         lbl_connect_status->setLayoutDirection(Qt::RightToLeft);
         lbl_connect_status->setTextFormat(Qt::PlainText);
@@ -84,10 +84,10 @@ public:
 
         horizontalLayout_3 = new QHBoxLayout();
         horizontalLayout_3->setSpacing(6);
-        horizontalLayout_3->setObjectName(QStringLiteral("horizontalLayout_3"));
+        horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
         btn_poweroff = new QPushButton(layoutWidget);
-        btn_poweroff->setObjectName(QStringLiteral("btn_poweroff"));
-        btn_poweroff->setStyleSheet(QLatin1String("\n"
+        btn_poweroff->setObjectName(QString::fromUtf8("btn_poweroff"));
+        btn_poweroff->setStyleSheet(QString::fromUtf8("\n"
 "QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}\n"
 "QPushButton:pressed{\n"
 "    background:#0F5C7D; \n"
@@ -98,8 +98,8 @@ public:
         horizontalLayout_3->addWidget(btn_poweroff);
 
         btn_reboot = new QPushButton(layoutWidget);
-        btn_reboot->setObjectName(QStringLiteral("btn_reboot"));
-        btn_reboot->setStyleSheet(QLatin1String("\n"
+        btn_reboot->setObjectName(QString::fromUtf8("btn_reboot"));
+        btn_reboot->setStyleSheet(QString::fromUtf8("\n"
 "QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}\n"
 "QPushButton:hover{background:#3A9FCF;}\n"
 "QPushButton:pressed{background:#1A5F7A; border:2px solid #4FB3D9;}\n"
@@ -110,8 +110,8 @@ public:
         horizontalLayout_3->addWidget(btn_reboot);
 
         btn_connect = new QPushButton(layoutWidget);
-        btn_connect->setObjectName(QStringLiteral("btn_connect"));
-        btn_connect->setStyleSheet(QLatin1String("\n"
+        btn_connect->setObjectName(QString::fromUtf8("btn_connect"));
+        btn_connect->setStyleSheet(QString::fromUtf8("\n"
 "QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}\n"
 "QPushButton:hover{background:#3A9FCF;}\n"
 "QPushButton:pressed{background:#1A5F7A; border:2px solid #4FB3D9;}\n"
@@ -125,25 +125,25 @@ public:
         verticalLayout->addLayout(horizontalLayout_3);
 
         stackedWidget = new QStackedWidget(layoutWidget);
-        stackedWidget->setObjectName(QStringLiteral("stackedWidget"));
+        stackedWidget->setObjectName(QString::fromUtf8("stackedWidget"));
         pageMeasure = new QWidget();
-        pageMeasure->setObjectName(QStringLiteral("pageMeasure"));
+        pageMeasure->setObjectName(QString::fromUtf8("pageMeasure"));
         stackedWidget->addWidget(pageMeasure);
         pageCalibrate = new QWidget();
-        pageCalibrate->setObjectName(QStringLiteral("pageCalibrate"));
+        pageCalibrate->setObjectName(QString::fromUtf8("pageCalibrate"));
         stackedWidget->addWidget(pageCalibrate);
         pageParam = new QWidget();
-        pageParam->setObjectName(QStringLiteral("pageParam"));
+        pageParam->setObjectName(QString::fromUtf8("pageParam"));
         stackedWidget->addWidget(pageParam);
 
         verticalLayout->addWidget(stackedWidget);
 
         horizontalLayout = new QHBoxLayout();
         horizontalLayout->setSpacing(15);
-        horizontalLayout->setObjectName(QStringLiteral("horizontalLayout"));
+        horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
         btnMeasure = new QPushButton(layoutWidget);
-        btnMeasure->setObjectName(QStringLiteral("btnMeasure"));
-        btnMeasure->setStyleSheet(QLatin1String("\n"
+        btnMeasure->setObjectName(QString::fromUtf8("btnMeasure"));
+        btnMeasure->setStyleSheet(QString::fromUtf8("\n"
 "QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}\n"
 "QPushButton:hover{background:#3A9FCF;}\n"
 "QPushButton:checked{background:#1A5F7A; border:2px solid #4FB3D9;}\n"
@@ -154,8 +154,8 @@ public:
         horizontalLayout->addWidget(btnMeasure);
 
         btnCalibrate = new QPushButton(layoutWidget);
-        btnCalibrate->setObjectName(QStringLiteral("btnCalibrate"));
-        btnCalibrate->setStyleSheet(QLatin1String("\n"
+        btnCalibrate->setObjectName(QString::fromUtf8("btnCalibrate"));
+        btnCalibrate->setStyleSheet(QString::fromUtf8("\n"
 "QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}\n"
 "QPushButton:hover{background:#3A9FCF;}\n"
 "QPushButton:checked{background:#1A5F7A; border:2px solid #4FB3D9;}\n"
@@ -165,8 +165,8 @@ public:
         horizontalLayout->addWidget(btnCalibrate);
 
         btnParam = new QPushButton(layoutWidget);
-        btnParam->setObjectName(QStringLiteral("btnParam"));
-        btnParam->setStyleSheet(QLatin1String("\n"
+        btnParam->setObjectName(QString::fromUtf8("btnParam"));
+        btnParam->setStyleSheet(QString::fromUtf8("\n"
 "QPushButton{font-size:14px; padding:6px 25px; background:#2E86AB; color:white; border:none; border-radius:3px;}\n"
 "QPushButton:hover{background:#3A9FCF;}\n"
 "QPushButton:checked{background:#1A5F7A; border:2px solid #4FB3D9;}\n"
@@ -179,7 +179,7 @@ public:
         verticalLayout->addLayout(horizontalLayout);
 
         lbl_status = new QLabel(layoutWidget);
-        lbl_status->setObjectName(QStringLiteral("lbl_status"));
+        lbl_status->setObjectName(QString::fromUtf8("lbl_status"));
 
         verticalLayout->addWidget(lbl_status);
 
@@ -194,16 +194,16 @@ public:
 
     void retranslateUi(QWidget *Widget)
     {
-        Widget->setWindowTitle(QApplication::translate("Widget", "\347\224\265\347\243\201\350\266\205\345\243\260\346\265\213\345\216\232\347\263\273\347\273\237", nullptr));
-        label->setText(QApplication::translate("Widget", "\350\277\236\346\216\245\347\212\266\346\200\201", nullptr));
-        lbl_connect_status->setText(QApplication::translate("Widget", "\346\234\252\350\277\236\346\216\245", nullptr));
-        btn_poweroff->setText(QApplication::translate("Widget", "\345\205\263\346\234\272", nullptr));
-        btn_reboot->setText(QApplication::translate("Widget", "\351\207\215\345\220\257", nullptr));
-        btn_connect->setText(QApplication::translate("Widget", "\350\277\236\346\216\245", nullptr));
-        btnMeasure->setText(QApplication::translate("Widget", "\346\265\213\351\207\217", nullptr));
-        btnCalibrate->setText(QApplication::translate("Widget", "\346\240\241\345\207\206", nullptr));
-        btnParam->setText(QApplication::translate("Widget", "\345\217\202\346\225\260\350\256\276\347\275\256", nullptr));
-        lbl_status->setText(QApplication::translate("Widget", "\347\212\266\346\200\201", nullptr));
+        Widget->setWindowTitle(QCoreApplication::translate("Widget", "\347\224\265\347\243\201\350\266\205\345\243\260\346\265\213\345\216\232\347\263\273\347\273\237", nullptr));
+        label->setText(QCoreApplication::translate("Widget", "\350\277\236\346\216\245\347\212\266\346\200\201", nullptr));
+        lbl_connect_status->setText(QCoreApplication::translate("Widget", "\346\234\252\350\277\236\346\216\245", nullptr));
+        btn_poweroff->setText(QCoreApplication::translate("Widget", "\345\205\263\346\234\272", nullptr));
+        btn_reboot->setText(QCoreApplication::translate("Widget", "\351\207\215\345\220\257", nullptr));
+        btn_connect->setText(QCoreApplication::translate("Widget", "\350\277\236\346\216\245", nullptr));
+        btnMeasure->setText(QCoreApplication::translate("Widget", "\346\265\213\351\207\217", nullptr));
+        btnCalibrate->setText(QCoreApplication::translate("Widget", "\346\240\241\345\207\206", nullptr));
+        btnParam->setText(QCoreApplication::translate("Widget", "\345\217\202\346\225\260\350\256\276\347\275\256", nullptr));
+        lbl_status->setText(QCoreApplication::translate("Widget", "\347\212\266\346\200\201", nullptr));
     } // retranslateUi
 
 };

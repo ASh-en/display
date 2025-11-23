@@ -64,28 +64,69 @@ void form_calibrate::init_tblwidget(const std::vector<float>& actualData, const 
 
 void form_calibrate::ptn_clicked_calculate()
 {
+    std::vector<double> actualThickList, measureThickList;
 
-	std::vector<double> actualThickList, measureThickList;
-	int stepNum=0;
-	for(int i = 0; i < pStepWorkMeasureThick.size(); ++i)
-	{
-		if(pStepWorkMeasureThick[i] > 0.0)
-		{
-			++stepNum;
-		}
-	}
-	for (int col = 0; col < stepNum; ++col)
-	{
-		QTableWidgetItem *item = ui->tbl_step_workpiece->item(0, col);
-		actualThickList.push_back(item->text().toFloat());
-	}
-	for (int col = 0; col < stepNum; ++col)
-	{
-		QTableWidgetItem *item = ui->tbl_step_workpiece->item(1, col);
-		measureThickList.push_back(item->text().toFloat());
-	}
-	float cal_speed = calculateBestSpeed(measureThickList, actualThickList, ui->ldt_ultra_speed->text().toDouble());
-	ui->ldt_ultra_speed->setText(QString::number(cal_speed, 'f', 1));
+    // 1. 获取表格的列数，这是循环的正确次数
+    int columnCount = ui->tbl_step_workpiece->columnCount();
+
+    // 2. 遍历表格的每一列，建立数据对应关系并进行过滤
+    for (int col = 0; col < columnCount; ++col)
+    {
+        // 尝试获取当前列第0行（实际厚度）的单元格
+        QTableWidgetItem *actualItem = ui->tbl_step_workpiece->item(0, col);
+        // 尝试获取当前列第1行（测量厚度）的单元格
+        QTableWidgetItem *measureItem = ui->tbl_step_workpiece->item(1, col);
+
+        // 健壮性检查：确保两个单元格都存在且不为空
+        if (!actualItem || !measureItem || actualItem->text().isEmpty() || measureItem->text().isEmpty()) {
+            qDebug() << "[ptn_clicked_calculate] 表格第" << col << "列数据不完整或为空，已跳过。";
+            continue; // 如果任一单元格无效，则跳过当前列
+        }
+
+        // 将单元格文本转换为数值
+        bool actualOk, measureOk;
+        double actualThick = actualItem->text().toDouble(&actualOk);
+        double measureThick = measureItem->text().toDouble(&measureOk);
+
+        // 健壮性检查：确保转换成功且测量厚度有效
+        if (actualOk && measureOk && measureThick >= 0.1) {
+            // 数据有效，添加到列表中
+            actualThickList.push_back(actualThick);
+            measureThickList.push_back(measureThick);
+        } else {
+            // 输出调试信息，帮助定位问题数据
+            if (!actualOk) qDebug() << "[ptn_clicked_calculate] 表格第" << col << "列实际厚度值无效。";
+            if (!measureOk) qDebug() << "[ptn_clicked_calculate] 表格第" << col << "列测量厚度值无效。";
+            if (measureThick < 0.1) qDebug() << "[ptn_clicked_calculate] 表格第" << col << "列测量厚度(" << measureThick << ")小于0.1mm，已跳过。";
+        }
+    }
+
+    // 3. 检查是否有足够的有效数据来进行计算
+    if (actualThickList.empty() || measureThickList.empty() || actualThickList.size() != measureThickList.size()) {
+        qDebug() << "[ptn_clicked_calculate] 有效数据不足，无法进行计算。";
+        // 可以在这里给用户一个更友好的提示，例如弹出一个消息框
+        // QMessageBox::warning(this, "计算失败", "有效数据不足或数据不匹配，无法进行速度计算。");
+        return;
+    }
+
+    qDebug() << "[ptn_clicked_calculate] 共收集到" << actualThickList.size() << "组有效数据用于计算。";
+
+    // 4. 获取当前速度值
+    bool speedOk;
+    double currentSpeed = ui->ldt_ultra_speed->text().toDouble(&speedOk);
+    if (!speedOk) {
+        qDebug() << "[ptn_clicked_calculate] 当前速度值无效。";
+        // QMessageBox::warning(this, "计算失败", "当前速度值无效，请检查输入。");
+        return;
+    }
+
+    // 5. 调用计算函数
+    double cal_speed = calculateBestSpeed(measureThickList, actualThickList, currentSpeed);
+
+    // 6. 将计算结果更新到UI
+    ui->ldt_ultra_speed->setText(QString::number(cal_speed, 'f', 1)); // 保留一位小数
+
+    qDebug() << "[ptn_clicked_calculate] 计算完成，最佳速度已更新为:" << cal_speed;
 }
 void form_calibrate::on_set_ultra_speed()
 {
@@ -200,25 +241,11 @@ void form_calibrate::initMaterialInfo()
     // 显示当前声速（保留1位小数，单位m/s）
     ui->ldt_ultra_speed->setText(QString::number(currentSpeed, 'f', 1));
 
-    // 连接下拉框变化信号到槽函数
-    connect(ui->cbx_material, &QComboBox::currentTextChanged, 
-            this, &form_calibrate::onMaterialChanged);
 }
-/**写一个槽函数，当cbx_material变化时，根据当前的材料信息，显示不同的声速 */
-void form_calibrate::onMaterialChanged(const QString& displayName)
-{
-     // 1. 根据显示名称获取原始材料名称（如"铝合金7050" -> "AL7050"）
-    if (!m_displayToOriginMaterial.contains(displayName)) {
-        return; // 无效名称，直接返回
-    }
-    QString originName = m_displayToOriginMaterial[displayName];
 
-    // 2. 根据原始名称获取声速
-    double speed = m_materialManager.getSpeedByMaterial(originName);
-    if (speed <= 0) {
-        ui->ldt_ultra_speed->setText("无效");
-        return;
-    }
-    // 3. 显示声速（保留1位小数）
-    ui->ldt_ultra_speed->setText(QString::number(speed, 'f', 1));
-}
+void form_calibrate::updateDeviceParams(const DEVICE_ULTRA_PARAM_U &params)
+{
+    INT16 ultra_speed_number = 0x02;
+    ui->ldt_ultra_speed->setText(QString::number(params.arrParam[ultra_speed_number].value / 10.0 , 'f', 1));
+    return;
+} 

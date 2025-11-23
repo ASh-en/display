@@ -63,7 +63,7 @@ void  form_param::initPlotGraph()
     textLabel->setPositionAlignment(Qt::AlignTop | Qt::AlignLeft);//文字布局：顶、左对齐
     textLabel->position->setType(QCPItemPosition::ptAxisRectRatio);//位置类型（当前轴范围的比例为单位/实际坐标为单位）
     textLabel->position->setCoords(0.80, 0); //把文字框放在X轴的中间，Y轴的最顶部
-    textLabel->setText(QString::fromLocal8Bit("增益:20db\n") + QString::fromLocal8Bit("频率:4Mhz\n") + QString::fromLocal8Bit("固定PP"));
+    textLabel->setText(QString::fromLocal8Bit("厚度:0.000mm\n")+QString::fromLocal8Bit("增益:20db\n") + QString::fromLocal8Bit("频率:4Mhz\n") + QString::fromLocal8Bit("固定PP"));
     textLabel->setFont(QFont(font().family(), 6)); //字体大小
     //textLabel->setPen(QPen(Qt::red)); //字体颜色
     textLabel->setPadding(QMargins(2, 2, 2, 2));//文字距离边框几个像素
@@ -72,20 +72,6 @@ void  form_param::initPlotGraph()
 
 }
 
-/**struct WAVE_DATA
-{
-    short thickness; //厚度
-    short pos_first; //闸门开始
-    
-    short pos_second; //闸门结束
-    short gain;  //增益
-    
-    short freq;  //频率
-    short control_mode; //控制模式
-    
-    short wave_data[WAVE_NUM]; //波形数据
-   
-}; */
 void form_param::updatePlotGraph(const WAVE_DATA& waveData)
 {
 	QVector<double> time, amp;
@@ -114,6 +100,10 @@ void form_param::updatePlotGraph(const WAVE_DATA& waveData)
 	y1[1] = 30000/**std::max_element(amp.begin(), amp.end()) *  1.15*/;
 	ui->widget->graph(2)->setData(x1, y1);
 
+    displayTxt += (QString::fromLocal8Bit("厚度:"));
+    displayTxt += (QString::number(waveData.thickness, 'f', 3));
+    displayTxt += "mm\n";
+    
 	displayTxt += (QString::fromLocal8Bit("增益:"));
 	displayTxt += (QString::number(waveData.gain, 'f', 1));
 	displayTxt += "db\n";
@@ -142,4 +132,22 @@ void form_param::ptn_clicked_send_param_slots()
 
 void form_param::ptn_clicked_read_param_slots(){
     emit GetParam();
+}
+
+void form_param::updateDeviceParams(const DEVICE_ULTRA_PARAM_U &params)
+{
+    // 增加功能：根据 ldt_param_number 更新 ldt_param_value
+    QString paramNumberText = ui->ldt_param_number->text().trimmed();
+    bool ok = false;
+    int param_number = paramNumberText.toInt(&ok);
+
+    // 检查是否为有效数字且在范围内
+    if (ok && param_number >= 0 && param_number < PARAM_SIZE) {
+        // 将 params.arrParam[k].value 转换为字符串并设置到 ldt_param_value
+        ui->ldt_param_value->setText(QString::number(params.arrParam[param_number].value));
+    } else {
+        ui->ldt_param_value->clear();
+        qDebug() << "[form_param] 无效的参数编号:" << paramNumberText;
+    }
+    
 }

@@ -28,16 +28,16 @@ private:
     QMap<QString, QString> m_displayToOriginMaterial;
     void initMaterialInfo();
     MaterialSoundSpeedManager m_materialManager;
-    void onMaterialChanged(const QString& displayName);
     
 signals:
     void sendParamChanged(INT16 param_no, INT16 param_value);
 
 public slots:
     void on_recv_thickness(const double& data);
+    void updateDeviceParams(const DEVICE_ULTRA_PARAM_U &params);
+ 
 private slots:
     void ptn_clicked_calculate();
-    
     void on_btn_save_actual_data();
     void on_set_ultra_speed();
 

@@ -23,13 +23,19 @@ form_measure::~form_measure()
 /**槽函数，接收电量，根据当前的电量数值给progressBar_elec_quantity控件赋值，如果≥60%就显示绿色，20-60为黄色，≤20为红色 */
 void form_measure::onBatteryQuantityChanged(const int& data)
 {
-    // 1. 安全校验：确保电量在0-100范围内（避免异常值）
-    int elec_quantity = qBound(0, data, 100);  // 限制数值在0-100之间
-
-    // 2. 更新进度条数值
+    const int BATTERY_SCALE_FACTOR = 1.6;
+    // 1. 输入参数有效性检查（避免异常值）
+    if (data < 0) {
+        qWarning() << "无效的电池电量数据：" << data;
+        return;
+    }
+    // 2. 电量转换与范围限制（0-100）
+    int elec_quantity = qBound(0, static_cast<int>(data * BATTERY_SCALE_FACTOR), 100);
+    // 3. 更新进度条数值（确保进度条范围正确）
+    ui->progressBar_elec_quantity->setRange(0, 100);
     ui->progressBar_elec_quantity->setValue(elec_quantity);
 
-    // 3. 根据电量范围设置进度条颜色（通过样式表）
+    // 4. 根据电量范围设置进度条颜色（通过样式表）
     QString style;
     if (elec_quantity >= 60) {
         // ≥60%：绿色
@@ -126,4 +132,6 @@ void form_measure::onMaterialChanged(const QString& displayName)
     emit sendParamChanged(param_no, param_value);
 
 }
+
+
 

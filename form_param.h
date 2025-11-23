@@ -31,6 +31,7 @@ private:
 
 public slots:
     void updatePlotGraph(const WAVE_DATA& waveData);
+    void updateDeviceParams(const DEVICE_ULTRA_PARAM_U &params);
 private slots:
    void ptn_clicked_send_param_slots();
    void ptn_clicked_read_param_slots();

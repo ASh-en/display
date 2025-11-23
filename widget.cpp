@@ -229,7 +229,7 @@ void Widget::onConnectStatus(bool isConnect)
     if (isConnect) 
     {
         //已连接：文本为“已连接”，颜色设为绿色
-        statusLabel->setText(QString::fromLocal8Bit("未连接"));
+        statusLabel->setText(QString::fromLocal8Bit("已连接"));
         //方案1：设置文字颜色为绿色（推荐，仅文字变色）
         statusLabel->setStyleSheet("color: rgb(0, 255, 0);");  // 绿色
     } 

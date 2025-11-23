@@ -39,7 +39,7 @@ serial::serial(QObject *parent) : QObject(parent)
 	serial1.setFlowControl(QSerialPort::NoFlowControl);
 	
     timertick = new QTimer(this);  //基准时间步进 5ms
-
+	emit send_connect_status(false);
 	QObject::connect(&serial1, &QSerialPort::readyRead,this,&serial::onReadyRead);
 	QObject::connect(this, &serial::startTimeSync, this, &serial::timeSync);
     QObject::connect(this, &serial::getCharge, this, &serial::timer_elec_quantity_slot);
@@ -381,6 +381,7 @@ void serial::processThicknessData(int index)
                     }
                     
                     matched = false;
+					emit send_connect_status(matched);
 					if(!isInTimeSyncProgress)
 					{
 						emit startTimeSync();       // 触发异步校时
@@ -414,7 +415,7 @@ void serial::processTimeSync()
              << "expected:" << lastSentTimestamp;
 
     matched = (recv_ts == lastSentTimestamp);
-
+	emit send_connect_status(matched);
     if (matched)
     {
         isInTimeSyncProgress = false;
@@ -537,6 +538,8 @@ void serial::on_timer_get_wave_slot(){
 	serial1.write("#RST$%%%%%%%");
     serial1.flush();
 	qDebug()<<"send wave success";
+
+	
 	
 
 }
@@ -590,10 +593,14 @@ void serial::StateCheck()
        qDebug()<<waitForStopThkResponse<<isInTimeSyncProgress<<isRecvThicknessData<<noThkResponse;
     }
     
-    if(timecount % 2000 == 0) //10s
+    if(timecount % 3000 == 0) //10s
     {
         emit getCharge();
     }
+	if(timecount % 5000 == 0)
+	{
+		onReadParam();
+	}
     if((timecount % 100 == 0) && waitForStopThkResponse && isRecvThicknessData) //500ms
     {
         stopThk();

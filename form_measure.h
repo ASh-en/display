@@ -18,7 +18,6 @@ class form_measure : public QWidget
 public:
     explicit form_measure(QWidget *parent = nullptr);
     ~form_measure();
-
 private:
     Ui::form_measure *ui;
     dac8760 _dac;

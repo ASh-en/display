@@ -72,6 +72,7 @@ signals:
     void sendthick(double thickness_value);
     void send_para(const QByteArray &para_data);
     void send_dev_params(const DEVICE_ULTRA_PARAM_U &device_params);
+    void send_connect_status(bool isMactched);
 public slots:
     void emitsignal();
     void ReadData();
