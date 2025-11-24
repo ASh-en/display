@@ -115,8 +115,8 @@ public:
 	PARAM_STRUCT_S stopDisplay;          //29.显示结束
 	PARAM_STRUCT_S lcdDisplayTxt;        //30.LCD屏显示内容切换 0.显示厚度 1.显示波形
 	PARAM_STRUCT_S  measureMaterial;        //31.测厚材料 0.铝 1.钛合金
-	PARAM_STRUCT_S  sendWaveSegment;        //32.发送的波形段 0: 5-20us ; 1: 14-29us
-	PARAM_STRUCT_S communicateMode;      //33. 通讯模式
+	//PARAM_STRUCT_S  sendWaveSegment;        //32.发送的波形段 0: 5-20us ; 1: 14-29us
+	//PARAM_STRUCT_S communicateMode;      //33. 通讯模式
 };
 
 const int PARAM_SIZE = sizeof(DEVICE_PARAM_S) / sizeof(PARAM_STRUCT_S);

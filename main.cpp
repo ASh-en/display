@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
          qDebug() << "Failed to open port" << seri.serial1.portName();
          return 1;
      }
+    seri.onReadParam();
 
     seri.timeSync();
 	//seri.timer3->start(1000);

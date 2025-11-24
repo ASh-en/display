@@ -23,7 +23,7 @@ public:
     void stopServer();
     
     // 设置厚度数据（存储在输入寄存器，只读）
-    void setThicknessData(double thickness);
+    void setThicknessData(bool isConnect, double thickness);
     
     // 获取服务器运行状态
     bool isRunning() const;

@@ -39,17 +39,19 @@ public slots:
     void onBtnConnectClicked();
     void onConnectStatus(bool isConnect);
     void onThicknessDataChanged(const double& thickness); // 新增槽函数处理厚度数据变化
+    
 
 
 private slots:
     void onSetStatusTxt(const QString& txt);
     void onHoldingRegisterChanged(int address, quint16 value); // 新增槽函数处理保持寄存器变化
+   
 
 private:
 // 测量界面核心组件
     Ui::Widget *ui;
     
-    
+     bool isConnectStatus=false;
     // 辅助函数
     void resetBtnCheckedState();
     void initModbusServer(); // 新增函数初始化Modbus服务器

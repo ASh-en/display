@@ -56,11 +56,11 @@ void ModbusServer::stopServer()
 }
 
 // 设置厚度数据（写入输入寄存器）
-void ModbusServer::setThicknessData(double thickness)
+void ModbusServer::setThicknessData(bool isConnect, double thickness)
 {
     // 1. 厚度转换：mm -> μm
     quint16 scaled = static_cast<quint16>(thickness * THICKNESS_SCALE_FACTOR);
-
+    quint16 connectFlag = isConnect ? 1 : 0;
     // 2. 关键修改：将数据转换为大端字节序
     quint16 bigEndianValue = qToBigEndian(scaled);
     quint16 littleEndianValue = qToLittleEndian(scaled);
@@ -76,6 +76,9 @@ void ModbusServer::setThicknessData(double thickness)
     m_server->setData(QModbusDataUnit::InputRegisters,
                            THICKNESS_INPUT_REG_ADDRESS+1,
                            littleEndianValue);
+    m_server->setData(QModbusDataUnit::InputRegisters,
+                           THICKNESS_INPUT_REG_ADDRESS+2,
+                           connectFlag);
 }
 
 // 从外部更新设备参数（写入保持寄存器）

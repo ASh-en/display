@@ -79,7 +79,7 @@ void Widget::onThicknessDataChanged(const double& thickness)
 {
     // 将厚度数据传递给Modbus服务器
     if (m_modbusServer && m_modbusServer->isRunning()) {
-        m_modbusServer->setThicknessData(thickness);
+        m_modbusServer->setThicknessData(isConnectStatus,thickness);
     }
 }
 
@@ -221,12 +221,13 @@ void Widget::onBtnRebootClicked()
  * 控件为绿色，反之，为“未连接”，控件为红色*/
 void Widget::onConnectStatus(bool isConnect)
 { 
+    isConnectStatus = isConnect;
     QLabel* statusLabel = ui->lbl_connect_status;
     if (!statusLabel) 
     {
         return;
     }
-    if (isConnect) 
+    if (isConnectStatus) 
     {
         //已连接：文本为“已连接”，颜色设为绿色
         statusLabel->setText(QString::fromLocal8Bit("已连接"));
