@@ -88,9 +88,8 @@ void Widget::onBtnMeasureClicked()
     resetBtnCheckedState();
     ui->btnMeasure->setChecked(true);
     ui->stackedWidget->setCurrentWidget(pMeasureForm);
-    if(p_timer_get_wave->isActive()){
-        p_timer_get_wave->stop();
-    }
+    emit send_status_changed(SEND_THICK_STATUS);
+    
 }
 
 void Widget::onBtnCalibrateClicked()
@@ -98,11 +97,8 @@ void Widget::onBtnCalibrateClicked()
     resetBtnCheckedState();
     ui->btnCalibrate->setChecked(true);
     ui->stackedWidget->setCurrentWidget(pCalibrateForm);
-    if (p_timer_get_wave->isActive())
-    {
-        p_timer_get_wave->stop();
-        emit send_start_thick();
-    }
+    emit send_status_changed(SEND_THICK_STATUS);
+
     
 }
 
@@ -111,10 +107,7 @@ void Widget::onBtnParamClicked()
     resetBtnCheckedState();
     ui->btnParam->setChecked(true);
     ui->stackedWidget->setCurrentWidget(pParamForm);
-    if (!p_timer_get_wave->isActive())
-    {
-        p_timer_get_wave->start(2000); 
-    }
+    emit send_status_changed(NOT_SEND_THICK_STAUS);
 }
 
 void Widget::resetBtnCheckedState()
@@ -122,11 +115,6 @@ void Widget::resetBtnCheckedState()
     ui->btnMeasure->setChecked(false);
     ui->btnCalibrate->setChecked(false);
     ui->btnParam->setChecked(false);
-    if (p_timer_get_wave->isActive())
-    {
-        p_timer_get_wave->stop();
-        emit send_start_thick();
-    }
 }
 
 //控制树莓派进行关机
@@ -200,14 +188,10 @@ void Widget::onBtnRebootClicked()
 /**槽函数：重新连接串口 */
  void Widget::onBtnConnectClicked()
  {
-    //先获取参数
-    emit getAllParam_S();
-    //sleep(1000);
-
      if (p_timer_get_wave->isActive())
     {
         p_timer_get_wave->stop();
-        emit send_start_thick();
+        emit send_status_changed(SEND_THICK_STATUS);
     }
  }
 

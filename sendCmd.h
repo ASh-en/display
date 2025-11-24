@@ -1,0 +1,23 @@
+#pragma once
+#include "type_define.h"
+
+const int COMMAND_LENGTH = 12;
+enum SEND_COMMAND_NUMBER_E
+{
+	SEND_COMMAND_GET_ALL_PARAM = 1,
+	SEND_COMMAND_SEND_PARAM,
+	SEND_COMMAND_READ_WAVE,
+	SEND_COMMAND_CELIBRATE,
+	SEND_COMMAND_GET_THICK,
+	SEND_COMMAND_STOP_THICK,
+	SEND_COMMAND_ELECTRIC_QT,
+	SEND_COMMAND_MAX = SEND_COMMAND_ELECTRIC_QT,
+};
+class sendCmd
+{
+private:
+	INT8 sendCommandList[COMMAND_LENGTH + 1];
+public:
+	char* getSendCommand(SEND_COMMAND_NUMBER_E commandNum, INT8* param = nullptr, int paramLen = 0);
+};
+

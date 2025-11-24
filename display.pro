@@ -36,8 +36,11 @@ SOURCES += \
     form_param.cpp \
     form_calibrate.cpp \
     material_sound_speed_manager.cpp \
-    modbus_server.cpp
-    
+    modbus_server.cpp \
+    g_var.cpp \
+    prasingRecvCmd.cpp \
+    sendCmd.cpp \
+    serial_communicate.cpp
 
 HEADERS += \
          qcustomplot.h\
@@ -55,7 +58,13 @@ HEADERS += \
     param_define.h \
     type_define.h \
     material_sound_speed_manager.h \
-    modbus_server.h
+    modbus_server.h \
+    g_var.h \
+    prasingRecvCmd.h \
+    sendCmd.h \
+    serial_communicate.h
+    
+
    
 
 FORMS += \
@@ -64,8 +73,11 @@ FORMS += \
     form_param.ui \
     form_calibrate.ui
 LIBS += -L/usr/local/lib -lwiringPi
-INCLUDEPATH += /usr/local/include \
-	/usr/include \
+
+INCLUDEPATH += \
+    $$PWD/.. \         
+    /usr/local/include \
+    /usr/include 
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

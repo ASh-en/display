@@ -3,6 +3,14 @@
 
 const int SEND_COMMAND_LENGTH = 12;
 const int WAVE_NUM = 1500;
+
+typedef enum
+{
+    SEND_STATUS_NONE = 0,
+	SEND_THICK_STATUS = 1,
+    NOT_SEND_THICK_STAUS =2
+
+}SEND_STATUS_E;
 struct WAVE_DATA
 {
     short thickness; //厚度

@@ -1,6 +1,5 @@
 #pragma once
-#include "typeDefine.h"
-#include "windows.h"
+#include "type_define.h"
 #include <QMap>
 
 const int MIN_DATA_LEN = 6;
@@ -13,6 +12,7 @@ enum RECV_COMMAND_NUMBER_E
 	RECV_COMMAND_GET_THICK = 5,
 	RECV_COMMAND_STOP_THICK = 6,
 	RECV_COMMAND_HEART_BEAT = 7,
+	RECV_COMMAND_ELECTRIC_QT = 8,
 };
 struct RECV_PRASING_DATA
 {
@@ -29,7 +29,7 @@ struct FUNC_S {
 	pFunc func;
 };
 
-short convertToLittleBigEndian(short data);
+short convert2LittleBigEndian(short data);
 class prasingRecvCmd
 {
 
@@ -38,7 +38,9 @@ public:
 	int parsingCommand(QByteArray& recvBuff, RECV_PRASING_DATA& curRecvData);
 	prasingRecvCmd();
 private:
-	
+	int last_pack_num;
+	QByteArray* tmpArray;
+	int waveDataMatching(QByteArray& recvBuff);
 	
 	
 
@@ -50,6 +52,7 @@ int prasingCelibrate(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData
 int prasingRecvThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos = 0);
 int prasingStopThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos = 0);
 int prasingHeartBeat(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos = 0);
+int prasingElectricQuantity(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos = 0);
 bool my_compare(FUNC_S a, FUNC_S b);
 
 

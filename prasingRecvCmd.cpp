@@ -1,7 +1,7 @@
 #include "prasingRecvCmd.h"
 #include <stdlib.h>
-#include <qDebug>
-#include "paramDefine.h"
+#include <QDebug>
+#include "param_define.h"
 
 const QString HEART_BEAT_RECV_DATA = "#HEARTBEAT" ;
 const QString RECV_THICKNESS_HEAD = "#TH";
@@ -11,8 +11,11 @@ const QString GET_RECV_PARAM_CMD_HEAD ="#GET";
 const QString STOP_THICK_RECV_DATA = "#STOOK$";
 const QString CELIBRATE_ULTRA_SPEED = "#ONEKEYBDO";
 const char RECV_WAVE_TAIL[] = { 0x00, 0xAA };
-
- short convertToLittleBigEndian(short data)
+const QString RECV_ELECTRIC_QT_HEAD = "#EQT";
+const QString RECV_READ_WAVE_TAIL = QString::fromLatin1("\xAA\x55");
+const  QString PACKET_WAVE_DATA_BEGIN = QString::fromLatin1("\xAB\xCD");
+const int PACKET_SIZE = 3180 / 30;
+ short convert2LittleBigEndian(short data)
 {
 	char a[2];
 	short* result;
@@ -26,7 +29,8 @@ const char RECV_WAVE_TAIL[] = { 0x00, 0xAA };
 }
  prasingRecvCmd::prasingRecvCmd()
  {
-
+	 last_pack_num = -1;
+	 tmpArray = new QByteArray;
 
  }
  bool my_compare(FUNC_S a, FUNC_S b)
@@ -43,7 +47,7 @@ int findAllOccurrences(const QByteArray &recvBuff, const char* head, QList<int>&
 	 while ((index = recvBuff.indexOf(head, index)) != -1) {
 		 num++;
 		 positions.append(index);
-		 index += strnlen_s(head, 12); // Move index forward to avoid finding the same occurrence again
+		 index += qstrnlen(head, 12); // Move index forward to avoid finding the same occurrence again
 		 if (index > recvBuff.length() - 2)
 			 break;
 	 }
@@ -51,10 +55,10 @@ int findAllOccurrences(const QByteArray &recvBuff, const char* head, QList<int>&
 	 return num;
  }
 
- int  findNextPos(const QByteArray &recvBuff, const QString &head, int formerPos)
+ int  findNextPos(const QByteArray &recvBuff, const QByteArray &head, int formerPos)
  {
 	 int pos = -1;
-	 if (0 == recvBuff.length() || 0 == head.size())
+	 if (recvBuff.isEmpty() || head.isEmpty())
 	 {
 		 return -1;
 	 }
@@ -63,16 +67,83 @@ int findAllOccurrences(const QByteArray &recvBuff, const char* head, QList<int>&
 		 return -1;
 	 }
 	 return recvBuff.indexOf(head, formerPos >= 0 ? formerPos + head.length() : 0);
-	/* int startIndex = formerPos >= 0 ? formerPos + head.length() : 0;
-	 for (int i = startIndex; i < recvBuff.size() - head.length(); i++)
+ }
+
+
+
+ 
+
+ int prasingRecvCmd::waveDataMatching(QByteArray& recvBuff)
+ {
+	 const char PACKET_WAVE_DATA_END[] = { 0xDC, 0xBA };
+	 int pos = -1;
+	 int offset = -1;
+	 int packet_number = -1;
+	 if (-1 == last_pack_num)
 	 {
-		 pos = recvBuff.indexOf(head, i);
-		 if (0 <= pos)
+		 tmpArray->clear();
+	 }
+	 while (0 <= (pos = findNextPos(recvBuff, PACKET_WAVE_DATA_BEGIN.toLatin1(), -1)))
+	 {
+		 //qDebug() << pos;
+		 if (PACKET_SIZE > recvBuff.length() - pos)
 		 {
-			 return pos;
+			 return EOK;
 		 }
-	 }*/
-	 //return -1;
+		 packet_number = static_cast<unsigned char>(recvBuff[pos + PACKET_WAVE_DATA_BEGIN.length()]);
+		 if (0 > packet_number || 0x1D < packet_number)
+		 {
+			 recvBuff.remove(pos, PACKET_SIZE);
+			 last_pack_num = -1;
+			 tmpArray->clear();
+			 break;
+		 }
+		 offset = pos + PACKET_SIZE - sizeof(PACKET_WAVE_DATA_END);
+		 if (recvBuff[offset] == PACKET_WAVE_DATA_END[0] && recvBuff[offset + 1] == PACKET_WAVE_DATA_END[1]) 
+		 {
+			 // �������Ƿ�����
+			 if ( packet_number == last_pack_num + 1) 
+			 {
+				 last_pack_num = packet_number;
+				 QByteArray packetData = recvBuff.mid(pos + PACKET_WAVE_DATA_BEGIN.length() + sizeof(char), PACKET_SIZE -
+					 PACKET_WAVE_DATA_BEGIN.length() - sizeof(PACKET_WAVE_DATA_END) - sizeof(char));
+				 recvBuff.remove(pos, PACKET_SIZE);
+				 
+				 //qDebug() << tmpArray->size()<<"Packet" << packet_number << "data:" << packetData;
+				 *tmpArray += packetData;
+				 if (0x1D == packet_number)
+				 {
+					 pos = findNextPos(*tmpArray, RECV_READ_WAVE_TAIL.toLatin1(), -1);
+					 if (0 < pos)
+					 {
+						 tmpArray->remove(pos + RECV_READ_WAVE_TAIL.length(), tmpArray->size() - 
+							 pos - RECV_READ_WAVE_TAIL.length()+2);
+						 recvBuff.append(*tmpArray);
+					 }
+					 last_pack_num = -1;
+					 tmpArray->clear();
+				 }
+				 
+			 }
+			 else 
+			 {
+				 recvBuff.remove(pos, PACKET_SIZE);
+				 last_pack_num = -1;
+				 tmpArray->clear();
+				 break;
+			 }
+		
+		 }
+		 else
+		 {
+			 recvBuff.remove(pos, PACKET_SIZE);
+			 last_pack_num = -1;
+			 tmpArray->clear();
+			 break;
+		 }
+	 }
+	 return EOK;
+
  }
 
 int prasingRecvCmd::parsingCommand(QByteArray& recvBuff, RECV_PRASING_DATA& curRecvData)
@@ -85,20 +156,22 @@ int prasingRecvCmd::parsingCommand(QByteArray& recvBuff, RECV_PRASING_DATA& curR
 	func_list.append({ -1, SET_PARAM_RETRUN_DATA, sizeof(SET_PARAM_RETRUN_DATA), prasingSetParam });
 	func_list.append({ -1, GET_RECV_PARAM_CMD_HEAD, sizeof(GET_RECV_PARAM_CMD_HEAD),prasingGetAllParam });
 	func_list.append({ -1, CELIBRATE_ULTRA_SPEED, sizeof(CELIBRATE_ULTRA_SPEED),prasingCelibrate });
+	func_list.append({ -1, RECV_ELECTRIC_QT_HEAD, RECV_ELECTRIC_QT_HEAD.length(), prasingElectricQuantity });
 	
- qDebug()<<recvBuff;
 	
 	if (MIN_DATA_LEN > recvBuff.length())
 	{	
 		return -1;
 	}
+	waveDataMatching(recvBuff);
 	while (0 < func_list.size())
 	{
 		for (int i = 0; i < func_list.size(); i++)
 		{
-			func_list[i].pos = findNextPos(recvBuff, func_list[i].head, func_list[i].pos);
+			func_list[i].pos = findNextPos(recvBuff, func_list[i].head.toLatin1(), func_list[i].pos);
 		}
 		qSort(func_list.begin(), func_list.end(), my_compare);
+		//qDebug() << recvBuff.length() << "data" << recvBuff;
 		for (int i = func_list.size() - 1; i >= 0; i--)
 		{
 			if (-1 == func_list.at(i).pos)
@@ -155,9 +228,9 @@ int prasingGetAllParam(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvDa
 	pData = (INT16*)&recvBuff[pos + GET_RECV_PARAM_CMD_HEAD.length()];
 	for (int i = 0; i < PARAM_SIZE; i++)
 	{
-		curRecvData.arrResult[i] = convertToLittleBigEndian(pData[i]);
+		curRecvData.arrResult[i] = convert2LittleBigEndian(pData[i]);
 	}
-	//memcpy_s(curRecvData.arrResult, sizeof(curRecvData.arrResult), 
+	//qMemCopy(curRecvData.arrResult, sizeof(curRecvData.arrResult), 
 	//	&recvBuff[sizeof(GET_RECV_PARAM_CMD_HEAD)], PARAM_SIZE * sizeof(short));
 	curRecvData.recvDataLen = PARAM_SIZE;
 	return GET_RECV_PARAM_CMD_HEAD.length() + sizeof(GET_RECV_PARAM_CMD_TAIL) + PARAM_SIZE * sizeof(short);
@@ -191,7 +264,7 @@ int prasingSetParam(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData,
 int prasingReadWave(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData,int pos)
 {
 	
-	const char RECV_READ_WAVE_TAIL[] = { 0xAA, 0x55 };
+	
 	INT16* pData = nullptr;
 
 	if (NULL == recvBuff)
@@ -199,8 +272,8 @@ int prasingReadWave(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData,
 		printf("recvBuff is NULL. %s:%d\n", __FILE__, __LINE__);
 		return -1;
 	}
-	if ((RECV_READ_WAVE_HEAD.length() + 1 + sizeof(RECV_READ_WAVE_TAIL) + (WAVE_POINT_NUM + 6) * sizeof(short))
-	> dataLen - pos)
+
+	if ((RECV_READ_WAVE_HEAD.length() + 1 + RECV_READ_WAVE_TAIL.length() + (WAVE_NUM + 6) * sizeof(short))> dataLen - pos)
 	{
 		return -1;
 	}
@@ -213,9 +286,9 @@ int prasingReadWave(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData,
 			return -1;
 		}
 	}
-	for (int i = 0; i < sizeof(RECV_READ_WAVE_TAIL); i++)
+	for (int i = 0; i < RECV_READ_WAVE_TAIL.length(); i++)
 	{
-		if (RECV_READ_WAVE_TAIL[i] != recvBuff[pos + RECV_READ_WAVE_HEAD.length() + 1 + (WAVE_POINT_NUM + 6) * sizeof(short) + i])
+		if (RECV_READ_WAVE_TAIL[i].toLatin1() != recvBuff[pos + RECV_READ_WAVE_HEAD.length() + 1 + (WAVE_NUM + 6) * sizeof(short) + i])
 		{
 			return -1;
 		}
@@ -223,11 +296,11 @@ int prasingReadWave(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData,
 	curRecvData.cmdType = RECV_COMMAND_READ_WAVE;
 
 	pData = (INT16*)&recvBuff[pos + RECV_READ_WAVE_HEAD.length() + 1];
-	for (int i = 0; i < WAVE_POINT_NUM ; i++)
+	for (int i = 0; i < WAVE_NUM ; i++)
 	{
-		curRecvData.arrResult[i] = convertToLittleBigEndian(pData[i]);
+		curRecvData.arrResult[i] = convert2LittleBigEndian(pData[i]);
 	}
-	return RECV_READ_WAVE_HEAD.length() + sizeof(RECV_READ_WAVE_TAIL) + (WAVE_POINT_NUM + 1) * sizeof(short);
+	return RECV_READ_WAVE_HEAD.length() + RECV_READ_WAVE_TAIL.length() + (WAVE_NUM + 1) * sizeof(short);
 }
 int prasingCelibrate(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos)
 {
@@ -239,7 +312,7 @@ int prasingCelibrate(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData
 		printf("recvBuff is NULL. %s:%d\n", __FILE__, __LINE__);
 		return -1;
 	}
-	if (sizeof(CELIBRATE_RETRUN_DATA_OK) != strnlen_s(&(recvBuff[pos]),dataLen))
+	if (sizeof(CELIBRATE_RETRUN_DATA_OK) != qstrnlen(&(recvBuff[pos]),dataLen))
 	{
 		return -1;
 	}
@@ -264,6 +337,39 @@ enum SIGNAL_STATUS_E
 	SIGNAL_STATUS_BAD = 3,
 	SIGNAL_STATUS_NO = 4
 };
+int prasingElectricQuantity(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos)
+{
+	const QString ELECTRIC_QT_TAIL = "$$";
+	if (NULL == recvBuff)
+	{
+		printf("recvBuff is NULL. %s:%d\n", __FILE__, __LINE__);
+		return -1;
+	}
+	//qDebug() << "prasingRecvThick";
+	if ((RECV_ELECTRIC_QT_HEAD.length() + ELECTRIC_QT_TAIL.length() + sizeof(char)) > dataLen - pos)
+	{
+		return -1;
+	}
+	for (int i = 0; i < RECV_ELECTRIC_QT_HEAD.length(); i++)
+	{
+		if (RECV_ELECTRIC_QT_HEAD[i] != recvBuff[i + pos])
+		{
+			return -1;
+		}
+	}
+	for (int i = 0; i < ELECTRIC_QT_TAIL.length(); i++)
+	{
+		if (ELECTRIC_QT_TAIL[i] != recvBuff[pos + RECV_ELECTRIC_QT_HEAD.length() + sizeof(char) + i])
+		{
+			return -1;
+		}
+	}
+	curRecvData.cmdType = RECV_COMMAND_ELECTRIC_QT;
+	curRecvData.arrResult[0] = recvBuff[pos + RECV_ELECTRIC_QT_HEAD.length()];
+	curRecvData.recvDataLen = 1;
+	return  RECV_ELECTRIC_QT_HEAD .length()+ ELECTRIC_QT_TAIL.length() + sizeof(char);
+
+}
 int prasingRecvThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos)
 {
 	
@@ -287,13 +393,13 @@ int prasingRecvThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData
 			return -1;
 		}
 	}
-	if (recvBuff[pos + RECV_THICKNESS_HEAD.length()] != SIGNAL_STATUS_GOOD &&
-		recvBuff[pos + RECV_THICKNESS_HEAD.length()] != SIGNAL_STATUS_NOT_BAD &&
-		recvBuff[pos + RECV_THICKNESS_HEAD.length()] != SIGNAL_STATUS_BAD &&
-		recvBuff[pos + RECV_THICKNESS_HEAD.length()] != SIGNAL_STATUS_NO)
-	{
-		return -1;
-	}
+	//if (recvBuff[pos + RECV_THICKNESS_HEAD.length()] != SIGNAL_STATUS_GOOD &&
+	//	recvBuff[pos + RECV_THICKNESS_HEAD.length()] != SIGNAL_STATUS_NOT_BAD &&
+	//	recvBuff[pos + RECV_THICKNESS_HEAD.length()] != SIGNAL_STATUS_BAD &&
+	//	recvBuff[pos + RECV_THICKNESS_HEAD.length()] != SIGNAL_STATUS_NO)
+	//{
+	//	return -1;
+	//}
 	for (int i = 0; i < sizeof(RECV_THICKNESS_TAIL); i++)
 	{
 		if (RECV_THICKNESS_TAIL[i] != recvBuff[pos + RECV_THICKNESS_HEAD.length() + sizeof(char) + sizeof(short) + i])
@@ -306,7 +412,7 @@ int prasingRecvThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData
 	
 	for (int i = 0; i < 1; i++)
 	{
-		curRecvData.arrResult[i] = convertToLittleBigEndian(pData[i]);
+		curRecvData.arrResult[i] = (pData[i]);
 	}
 	curRecvData.recvDataLen = 1;
 	return sizeof(RECV_THICKNESS_HEAD) + sizeof(RECV_THICKNESS_TAIL) + sizeof(char) + sizeof(short);

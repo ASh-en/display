@@ -2,7 +2,7 @@
 #include "type_define.h"
 
 
-const int WAVE_POINT_NUM = 1500;
+const int WAVE_NUM = 1500;
 struct PARAM_STRUCT_S
 {
 	UINT16 index; //参数号

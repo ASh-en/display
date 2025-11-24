@@ -63,9 +63,9 @@ public:
     ModbusServer *m_modbusServer; 
 
 signals:
-    void send_start_thick();
+    void send_status_changed(SEND_STATUS_E status);
     void paramChanged(INT16 param_no, INT16 param_val); // 新增信号通知参数变化
-    void getAllParam_S();
+
 
 
 
