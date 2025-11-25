@@ -11,8 +11,9 @@ enum RECV_COMMAND_NUMBER_E
 	RECV_COMMAND_CELIBRATE = 4,
 	RECV_COMMAND_GET_THICK = 5,
 	RECV_COMMAND_STOP_THICK = 6,
-	RECV_COMMAND_HEART_BEAT = 7,
-	RECV_COMMAND_ELECTRIC_QT = 8,
+	RECV_COMMAND_ELECTRIC_QT = 7,
+	RECV_COMMAND_SYNC_TIME = 8,
+	RECV_COMMAND_HEART_BEAT = 9,
 };
 struct RECV_PRASING_DATA
 {
@@ -53,6 +54,6 @@ int prasingRecvThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData
 int prasingStopThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos = 0);
 int prasingHeartBeat(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos = 0);
 int prasingElectricQuantity(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos = 0);
+int prasingSyncTime(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos = 0);
 bool my_compare(FUNC_S a, FUNC_S b);
-
 

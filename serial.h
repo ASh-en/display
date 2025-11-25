@@ -78,13 +78,28 @@ private:
     RECV_PRASING_DATA curRecvData;
     SEND_STATUS_E mSendStatus;
 
+    bool matched = false;
+	//bool syncInProgress = false;//ash 20250715
+	uint16_t lastSentTimestamp = 0;
+    uint16_t timecount = 0;
+	
+	uint8_t testcnt = 0; // Packet loss rate test
+	uint32_t testloss = 0;
+	uint32_t testTotal = 0;
+	double testRate = 0;
+
     
     
 public:
    void setSendStatus(SEND_STATUS_E status);
+   void closeSerial();
+   void timeSync();
 private:
     QTimer* pTimerSendStatus;
     DEVICE_ULTRA_PARAM_U mDeviceParam;
+    
+    
+	
 private slots:
     void onTimerSendStatusSlots();
     

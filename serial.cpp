@@ -185,37 +185,11 @@ void serial::init_device_param(DEVICE_ULTRA_PARAM_U& deviceParam)
 
 void serial::onParamChanged(INT16 param_no, INT16 param_val)
 {
-	// INT16 sendParam[2] = { 0 };
-	// const INT8 setParamHead[4] = { 0x23, 0x53, 0x45, 0x54 };
-	// const INT8 setParamtail[4] = { 0x24, 0x25, 0x25, 0x25 };
-
-	// sendParam[0] = convertToLittleBigEndian(param_no);
-	// sendParam[1] = convertToLittleBigEndian(param_val);
-
-	// memset(sendCommandList, 0, sizeof(sendCommandList));
-	
-	// //复制头
-	// memcpy(sendCommandList, setParamHead, sizeof(setParamHead));
-	// //复制数据
-	// size_t paramLen = sizeof(sendParam);  
-	// memcpy(&sendCommandList[sizeof(setParamHead)], sendParam, paramLen);
-
-	// // 复制尾
-	// memcpy(&sendCommandList[sizeof(setParamHead) + paramLen], setParamtail, sizeof(setParamtail));
-
-	// serial1.write(reinterpret_cast<const char*>(sendCommandList), SEND_COMMAND_LENGTH);
-	
-	// // ---------------------- 16进制打印 ----------------------
-    // QString hexStr; 
-    // for (size_t i = 0; i < SEND_COMMAND_LENGTH; ++i) {
-    //     // 将每个INT8（signed char）转换为无符号字节（避免负数转换错误）
-    //     uint8_t byte = static_cast<uint8_t>(sendCommandList[i]);
-    //     // 格式化为两位16进制（大写），不足两位补0（如0x3 → "03"，0x1A → "1A"）
-    //     hexStr += QString("%1 ").arg(byte, 2, 16, QLatin1Char('0')).toUpper();
-    // }
-    // qDebug() << "onParamChanged" << hexStr.trimmed(); 
+	INT16 sendParam[2] = { 0 };
+	sendParam[0] = convert2LittleBigEndian(param_no);
+	sendParam[1] = convert2LittleBigEndian(param_val);
+    p_serial_communicate->add_send_command_list(SEND_COMMAND_SEND_PARAM, (INT8*)sendParam, sizeof(sendParam));
 }
-
 void serial::onReadParam(){
 }
 
@@ -246,51 +220,141 @@ void serial::onReadyRead()
 		{
 			break;
 		}
-		qDebug() << curRecvData.cmdType;
+		//qDebug() << curRecvData.cmdType;
 		prasing_error_num = 0;
 		continue_send_cmd[curRecvData.cmdType] = false;
 		switch (curRecvData.cmdType)
 		{
-		case RECV_COMMAND_SEND_PARAM:
-			//set_status_txt(QString::fromLocal8Bit("设置成功"));
-			break;
-		case RECV_COMMAND_GET_ALL_PARAM:
-			//set_status_txt(QString::fromLocal8Bit("获取全部参数成功"));
-			for (int i = 0; i < PARAM_SIZE; i++)
-			{
-				mDiviceParam.arrParam[i].index = i;
-				mDiviceParam.arrParam[i].value = curRecvData.arrResult[i];
-			}
-			emit send_dev_params(mDiviceParam);
-			
-			break;
-		case RECV_COMMAND_GET_THICK:
-			recvThickNum++;
-			emit _thickness(static_cast<UINT16>(curRecvData.arrResult[0]) / 1000.0);
-			// ui->ldt_thick->setText(QString::number(static_cast<UINT16>(curRecvData.arrResult[0]) / 1000.0, 'f', 3));
-			//set_status_txt(QString::fromLocal8Bit("读取厚度成功[") + QString::number(recvThickNum) + "]");
-			break;
-		case RECV_COMMAND_READ_WAVE:
-			recvWaveNum++;
-			//set_status_txt(QString::fromLocal8Bit("读取波形成功[" ) + QString::number(recvWaveNum) + "]");
-			waveData.thickness = curRecvData.arrResult[0] / 1000.0;
-			waveData.pos_first = curRecvData.arrResult[1] / 100.0;
-			waveData.pos_second = curRecvData.arrResult[2] / 100.0;
-			waveData.gain = curRecvData.arrResult[3] / 10.0;
-			waveData.freq = curRecvData.arrResult[4] / 100.0;
-			waveData.control_mode = curRecvData.arrResult[5] == 0 ? PP_CONTROL_MODE : AUTO_CONTROL_MODE;
-			for (int i = 0; i < WAVE_NUM; i++)
-			{
-				waveData.wave_data[i] =  (double)curRecvData.arrResult[i + 6] ;
-			}
-			emit _wave(waveData);
-			break;
-		case RECV_COMMAND_ELECTRIC_QT:
-			const int SCALE_FACTOR = 1.6;
-			emit _charge(static_cast<UINT16>(curRecvData.arrResult[0] * SCALE_FACTOR));
-			break;
-		// default:
-		// 	break;
+            case RECV_COMMAND_SEND_PARAM:
+                //set_status_txt(QString::fromLocal8Bit("设置成功"));
+                break;
+            case RECV_COMMAND_GET_ALL_PARAM:
+            {
+                   //set_status_txt(QString::fromLocal8Bit("获取全部参数成功"));
+                for (int i = 0; i < PARAM_SIZE; i++)
+                {
+                    mDiviceParam.arrParam[i].index = i;
+                    mDiviceParam.arrParam[i].value = curRecvData.arrResult[i];
+                }
+                emit send_dev_params(mDiviceParam);
+                
+                break;
+            }
+            case RECV_COMMAND_GET_THICK:
+            {
+                recvThickNum++;
+                static int consecutiveTimeouts = 0;   
+
+                uint8_t count = (uint8_t)curRecvData.arrResult[0];
+                uint16_t thickness = static_cast<uint16_t>(curRecvData.arrResult[1]);
+                uint16_t timestamp = static_cast<uint16_t>(curRecvData.arrResult[2]);
+                qDebug()<<"count"<<count<<"thickness:"<<thickness<<"timestamp"<<timestamp;
+
+                uint8_t lossdelta = (uint8_t)(count - testcnt); // 自动处理回绕
+                testcnt = count + 1;
+                testloss += lossdelta;
+                testTotal += (lossdelta==0) ? 1 : lossdelta;
+                testRate = 100.0 * testloss / testTotal;
+                if(lossdelta != 0)
+                {
+                    //m_buffer.remove(0, index);  //Todo:丢弃当前数据包之前的数据，可能会导致其他数据（主要为电量数据）被遗弃,需要进一步优化
+                    qDebug().noquote() << QString("Delta: %1 Total: %2 Loss Rate: %3%")
+                                            .arg(lossdelta)
+                                            .arg(testTotal)
+                                            .arg(testRate, 0, 'f', 2);
+                }
+
+                uint16_t now = static_cast<uint16_t>(TimeUtils::steadyTimeMillis() % 60000);
+                uint16_t delta = now > timestamp ? (now - timestamp) : (now + 60000 - timestamp);
+            
+                qDebug()<<"now: "<< now << "timestamp: " << timestamp <<"delta: " << delta;
+                //emit _delayUpdated(delta);
+
+                
+                if(delta > 400)
+                {
+                    qDebug() << "TimeOut detected. delta=" << delta;
+                    consecutiveTimeouts++;
+                    
+                    thickness = 0;
+
+                    if (consecutiveTimeouts >= 10) 
+                    {
+                        consecutiveTimeouts = 0;        // 触发后立即清零
+
+                        qDebug() << "Consecutive timeouts reached threshold. Restarting time sync.";
+                        p_serial_communicate->clear_g_send_cmd_lst();
+                        
+                        stopThk();                      // 停止获取厚度数据
+                        matched = false;
+                        
+                        timeSync();                     // 重新触发校时
+                        
+                        
+                    }		
+                    
+                }
+                else
+                {
+                    consecutiveTimeouts = 0;            // 非连续重置超时计数器
+                }
+
+                emit _thickness(static_cast<UINT16>(thickness));
+                // ui->ldt_thick->setText(QString::number(static_cast<UINT16>(curRecvData.arrResult[0]) / 1000.0, 'f', 3));
+                //set_status_txt(QString::fromLocal8Bit("读取厚度成功[") + QString::number(recvThickNum) + "]");
+                break;
+            }
+            case RECV_COMMAND_READ_WAVE:
+            {
+                recvWaveNum++;
+                //set_status_txt(QString::fromLocal8Bit("读取波形成功[" ) + QString::number(recvWaveNum) + "]");
+                waveData.thickness = curRecvData.arrResult[0] / 1000.0;
+                waveData.pos_first = curRecvData.arrResult[1] / 100.0;
+                waveData.pos_second = curRecvData.arrResult[2] / 100.0;
+                waveData.gain = curRecvData.arrResult[3] / 10.0;
+                waveData.freq = curRecvData.arrResult[4] / 100.0;
+                waveData.control_mode = curRecvData.arrResult[5] == 0 ? PP_CONTROL_MODE : AUTO_CONTROL_MODE;
+                for (int i = 0; i < WAVE_NUM; i++)
+                {
+                    waveData.wave_data[i] =  (double)curRecvData.arrResult[i + 6] ;
+                }
+                emit _wave(waveData);
+                break;
+            }
+            
+            case RECV_COMMAND_ELECTRIC_QT:
+            {
+                qDebug()<<"charge"<<curRecvData.arrResult[0];
+                emit _charge(static_cast<UINT16>(curRecvData.arrResult[0]));
+                break;
+            }
+            case RECV_COMMAND_SYNC_TIME:
+            {
+                uint16_t recv_ts = static_cast<uint16_t>(curRecvData.arrResult[0]);
+                // 解析接收到的时间戳;
+                qDebug() << "[TimeSync] Received ts:" << recv_ts
+                        << "expected:" << lastSentTimestamp;
+
+                matched = (recv_ts == lastSentTimestamp);
+                if (matched)
+                {
+
+                    qDebug() << "Time synchronized successfully.";
+                    // 获取厚度数据
+                    getThk();
+                    // 重置同步状态
+                }
+                else
+                {
+                    // 时间戳不匹配，重新触发校时
+                    qDebug() << "Time synchronized failed. Retrying...";
+                    timeSync();
+                }
+
+                break;
+            }
+            // default:
+            // 	break;
 		}
 	}
 	if (8000 < recvBuff.size())
@@ -301,13 +365,24 @@ void serial::onReadyRead()
 
 void serial::getThk()
 {
-
+    p_serial_communicate->add_send_command_list(SEND_COMMAND_GET_THICK);
 }
 
 void serial::stopThk()
 {
-
+    p_serial_communicate->add_send_command_list(SEND_COMMAND_STOP_THICK);
 }
+
+void serial::closeSerial()
+{
+    if(!isConnectSerial)
+    {
+        return;
+    }
+    p_serial_communicate->close_serial_port();
+    isConnectSerial = false;
+}
+
 
 void serial::setSendStatus(SEND_STATUS_E status)
 {
@@ -334,16 +409,37 @@ void serial::onTimerSendStatusSlots()
 	send_wave_count +=1;
 	send_elec_quantity +=1;
 	//非测量状态：每隔3S发送一次波形和参数
-	if(0 == send_wave_count % 30 && NOT_SEND_THICK_STAUS == mSendStatus)
+	if(0 == send_wave_count % 100 && NOT_SEND_THICK_STAUS == mSendStatus)
 	{
 		p_serial_communicate->add_send_command_list(SEND_COMMAND_READ_WAVE);
 		p_serial_communicate->add_send_command_list(SEND_COMMAND_GET_ALL_PARAM);
 	}
 	//测量状态：每隔3S发送一次参数和电量
-	if( 0 == send_elec_quantity % 30 && SEND_THICK_STATUS == mSendStatus)
+	if( 0 == send_elec_quantity % 100 && SEND_THICK_STATUS == mSendStatus)
 	{
 		p_serial_communicate->add_send_command_list(SEND_COMMAND_GET_ALL_PARAM);
 		p_serial_communicate->add_send_command_list(SEND_COMMAND_ELECTRIC_QT);
 	}
 	
 }
+
+void serial::timeSync()
+{
+
+	char buffer[13] = {0};
+	memcpy(buffer, "#TMSET", 6);
+	memcpy(buffer + 8, "%%%%", 4);
+	buffer[12] = '\0';
+
+	uint16_t timestamp = static_cast<uint16_t>(TimeUtils::steadyTimeMillis() % 60000);
+	buffer[6] = (timestamp >> 8) & 0xFF;
+	buffer[7] = timestamp & 0xFF;
+	lastSentTimestamp = timestamp;
+	
+	qDebug() << "Sending timeSync command:" << buffer << "timestamp:" << timestamp;
+	
+    
+	p_serial_communicate->serial_port.write(buffer,12);
+	p_serial_communicate->serial_port.flush();	
+	qDebug() << "Waiting Time synchronized .......";	
+}			

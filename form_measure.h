@@ -35,8 +35,6 @@ signals:
     void sendStatusText(const QString& txt);
     /**参数号与参数值 */
     void sendParamChanged(INT16 param_no, INT16 param_val);
-    /**厚度数据 */
-    void sendThicknessData(const double& data);
     
 
 

@@ -66,8 +66,6 @@ void form_measure::onRecvThhicknesData(const double& data)
               + "	th:" + QString::number(data / 1000.0, 'f', 3) + "mm"  // 浮点数转字符串（保留3位小数）
               + "	elec:" + QString::number(elecCurrent, 'f', 3);  // 电流值保留3位小数
     emit sendStatusText(statusTxt);
-
-    emit sendThicknessData(data / 1000.0);
 }
 void form_measure::initMaterialInfo()
 {
@@ -129,6 +127,7 @@ void form_measure::onMaterialChanged(const QString& displayName)
     INT16 param_no = 0x02;
     INT16 param_value = (int) (speed * 10);
 
+    qDebug()<<"ldt_ultra_speed"<<param_value;
     emit sendParamChanged(param_no, param_value);
 
 }

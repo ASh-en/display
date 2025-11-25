@@ -12,9 +12,7 @@ int main(int argc, char *argv[])
     Widget w;
     QObject::connect(&server,&tcp::tcp_rec,&seri,&serial::tcpRecData);
     QObject::connect(&seri,&serial::_charge,w.pMeasureForm,&form_measure::onBatteryQuantityChanged);
-    
-    QObject::connect(&seri,&serial::_thickness,w.pMeasureForm,&form_measure::onRecvThhicknesData);
-    QObject::connect(&seri,&serial::_thickness,w.pCalibrateForm,&form_calibrate::on_recv_thickness);
+    QObject::connect(&seri,&serial::_thickness,&w,&Widget::onThicknessDataChanged);
 
     //QObject::connect(w.p_timer_get_wave,&QTimer::timeout, &seri, &serial::on_timer_get_wave_slot);
     QObject::connect(&seri,&serial::send_connect_status,&w,&Widget::onConnectStatus);
@@ -24,7 +22,9 @@ int main(int argc, char *argv[])
     
     QObject::connect(&seri,&serial::_wave, w.pParamForm,&form_param::updatePlotGraph);
 
-    //QObject::connect(&seri,&serial::send_para,&server,&tcp::send_para_tcp);
+   
+    QObject::connect(&w, &Widget::request_thickness, &seri, &serial::getThk);
+    QObject::connect(&w, &Widget::paramChanged, &seri, &serial::onParamChanged);
     QObject::connect(w.pMeasureForm, &form_measure::sendParamChanged, &seri, &serial::onParamChanged);
     QObject::connect(w.pParamForm, &form_param::sendParamChanged, &seri, &serial::onParamChanged);
     QObject::connect(w.pParamForm, &form_param::GetParam, &seri, &serial::onReadParam);

@@ -25,6 +25,7 @@ public:
     void close_serial_port();
     int write_data_to_com(SEND_COMMAND_NODE& send_data);
     int add_send_command_list(SEND_COMMAND_NUMBER_E commandNum, INT8* param = NULL, int paramLen = 0);
+    void clear_g_send_cmd_lst();
 };
 
 // 线程函数声明

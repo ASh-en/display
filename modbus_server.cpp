@@ -93,7 +93,7 @@ void ModbusServer::updateDeviceParams(const DEVICE_ULTRA_PARAM_U &params)
         quint16 value = static_cast<quint16>(params.arrParam[i].value);
 
         // 2. 关键修改：将每个值转换为大端字节序
-        quint16 bigEndianValue = qToBigEndian(value);
+        quint16 bigEndianValue = qToLittleEndian(value);
 
         // 3. 写入转换后的大端值
         holdingUnit.setValue(i, bigEndianValue); // 传入大端值
@@ -105,7 +105,8 @@ void ModbusServer::updateDeviceParams(const DEVICE_ULTRA_PARAM_U &params)
         qDebug() << "[Modbus] 设备参数更新成功，共" << PARAM_SIZE << "个参数 (已转换为大端)";
         // 注意：缓存中也应存储大端值，以确保后续比较的一致性
         for (int i = 0; i < PARAM_SIZE; ++i) {
-            m_holdingRegisterCache[i] = qToBigEndian(static_cast<quint16>(params.arrParam[i].value));
+            m_holdingRegisterCache[i] = static_cast<quint16>(params.arrParam[i].value);
+            qDebug()<<m_holdingRegisterCache[i];
         }
     }
 }
@@ -147,12 +148,13 @@ void ModbusServer::checkHoldingRegisterChanges(QModbusDataUnit::RegisterType tab
     if (!readSuccess) {
         return;
     }
-
+    quint16  currecntValues_s ;
     // 4. 对比缓存，检测寄存器值变化
     for (int i = 0; i < currentValues.size(); ++i) {
         if (currentValues[i] != m_holdingRegisterCache[i]) {
+            currecntValues_s = currentValues[i];
             // 发出变化信号（参数：寄存器索引，新值）
-            emit holdingRegisterChanged(i, currentValues[i]);
+            emit holdingRegisterChanged(i, currecntValues_s);
             // 更新缓存（避免下次重复触发）
             m_holdingRegisterCache[i] = currentValues[i];
             qDebug() << "[Modbus] 保持寄存器变化：索引" << i << "（地址" << HOLDING_REGS_START_ADDRESS + i << "），新值" << currentValues[i];

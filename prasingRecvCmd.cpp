@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <QDebug>
 #include "param_define.h"
+#include "TimeUtils.h"
 
 const QString HEART_BEAT_RECV_DATA = "#HEARTBEAT" ;
 const QString RECV_THICKNESS_HEAD = "#TH";
@@ -14,6 +15,7 @@ const char RECV_WAVE_TAIL[] = { 0x00, 0xAA };
 const QString RECV_ELECTRIC_QT_HEAD = "#EQT";
 const QString RECV_READ_WAVE_TAIL = QString::fromLatin1("\xAA\x55");
 const  QString PACKET_WAVE_DATA_BEGIN = QString::fromLatin1("\xAB\xCD");
+const QString SYNC_TIME_RESONSE_HEAD = "#TIME";
 const int PACKET_SIZE = 3180 / 30;
  short convert2LittleBigEndian(short data)
 {
@@ -157,7 +159,7 @@ int prasingRecvCmd::parsingCommand(QByteArray& recvBuff, RECV_PRASING_DATA& curR
 	func_list.append({ -1, GET_RECV_PARAM_CMD_HEAD, sizeof(GET_RECV_PARAM_CMD_HEAD),prasingGetAllParam });
 	func_list.append({ -1, CELIBRATE_ULTRA_SPEED, sizeof(CELIBRATE_ULTRA_SPEED),prasingCelibrate });
 	func_list.append({ -1, RECV_ELECTRIC_QT_HEAD, RECV_ELECTRIC_QT_HEAD.length(), prasingElectricQuantity });
-	
+	func_list.append({ -1, SYNC_TIME_RESONSE_HEAD, sizeof(SYNC_TIME_RESONSE_HEAD), prasingSyncTime });
 	
 	if (MIN_DATA_LEN > recvBuff.length())
 	{	
@@ -345,7 +347,7 @@ int prasingElectricQuantity(char* recvBuff, int dataLen, RECV_PRASING_DATA& curR
 		printf("recvBuff is NULL. %s:%d\n", __FILE__, __LINE__);
 		return -1;
 	}
-	//qDebug() << "prasingRecvThick";
+	qDebug() << "prasingRecvThick";
 	if ((RECV_ELECTRIC_QT_HEAD.length() + ELECTRIC_QT_TAIL.length() + sizeof(char)) > dataLen - pos)
 	{
 		return -1;
@@ -364,6 +366,7 @@ int prasingElectricQuantity(char* recvBuff, int dataLen, RECV_PRASING_DATA& curR
 			return -1;
 		}
 	}
+	qDebug() << "prasingRecvThick"<<RECV_COMMAND_ELECTRIC_QT;
 	curRecvData.cmdType = RECV_COMMAND_ELECTRIC_QT;
 	curRecvData.arrResult[0] = recvBuff[pos + RECV_ELECTRIC_QT_HEAD.length()];
 	curRecvData.recvDataLen = 1;
@@ -372,9 +375,10 @@ int prasingElectricQuantity(char* recvBuff, int dataLen, RECV_PRASING_DATA& curR
 }
 int prasingRecvThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos)
 {
-	
 	const char RECV_THICKNESS_TAIL[] = { '$' };
 	INT16* pData = nullptr;
+	uint8_t count = 0;
+    uint16_t timestamp = 0;
 
 	if (NULL == recvBuff)
 	{
@@ -382,7 +386,7 @@ int prasingRecvThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData
 		return -1;
 	}
 	//qDebug() << "prasingRecvThick";
-	if ((RECV_THICKNESS_HEAD.length() + sizeof(RECV_THICKNESS_TAIL) + sizeof(char) +sizeof(short)) > dataLen - pos)
+	if ((RECV_THICKNESS_HEAD.length() + sizeof(RECV_THICKNESS_TAIL) + sizeof(char) + sizeof(short) + sizeof(short)) > dataLen - pos)
 	{
 		return -1;
 	}
@@ -402,20 +406,22 @@ int prasingRecvThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData
 	//}
 	for (int i = 0; i < sizeof(RECV_THICKNESS_TAIL); i++)
 	{
-		if (RECV_THICKNESS_TAIL[i] != recvBuff[pos + RECV_THICKNESS_HEAD.length() + sizeof(char) + sizeof(short) + i])
+		if (RECV_THICKNESS_TAIL[i] != recvBuff[pos + RECV_THICKNESS_HEAD.length() + sizeof(char) + sizeof(short) + sizeof(short) + i])
 		{
 			return -1;
 		}
 	}
 	curRecvData.cmdType = RECV_COMMAND_GET_THICK;
+	count = static_cast<uint8_t>(recvBuff[pos + RECV_THICKNESS_HEAD.length()]);
+    curRecvData.arrResult[0] = count;
 	pData = (INT16*) &recvBuff[pos + sizeof(RECV_THICKNESS_HEAD)];
-	
-	for (int i = 0; i < 1; i++)
-	{
-		curRecvData.arrResult[i] = (pData[i]);
-	}
-	curRecvData.recvDataLen = 1;
-	return sizeof(RECV_THICKNESS_HEAD) + sizeof(RECV_THICKNESS_TAIL) + sizeof(char) + sizeof(short);
+	curRecvData.arrResult[1] = convert2LittleBigEndian(pData[0]);
+    
+    timestamp = convert2LittleBigEndian(pData[1]);
+    curRecvData.arrResult[2] = timestamp;
+   
+	curRecvData.recvDataLen = 3;
+	return sizeof(RECV_THICKNESS_HEAD) + sizeof(RECV_THICKNESS_TAIL) + sizeof(char) + sizeof(short) + sizeof(short);
 }
 int prasingHeartBeat(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos)
 {
@@ -465,4 +471,49 @@ int prasingStopThick(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData
 	curRecvData.rtnStatus = true;
 	curRecvData.recvDataLen = 0;
 	return STOP_THICK_RECV_DATA.length();
+}
+int prasingSyncTime(char* recvBuff, int dataLen, RECV_PRASING_DATA& curRecvData, int pos)
+{
+    const char RECV_SYNC_TIME_TAIL[] = { '%' };
+    uint16_t recv_ts = 0;
+	uint16_t* pData = nullptr;
+
+	if (NULL == recvBuff)
+	{
+		printf("recvBuff is NULL. %s:%d\n", __FILE__, __LINE__);
+		return -1;
+	}
+	
+	if ((SYNC_TIME_RESONSE_HEAD.length() + sizeof(RECV_SYNC_TIME_TAIL) + sizeof(short)) > dataLen - pos)
+	{
+		return -1;
+	}
+	for (int i = 0; i < SYNC_TIME_RESONSE_HEAD.length(); i++)
+	{
+		if (SYNC_TIME_RESONSE_HEAD[i] != recvBuff[i + pos])
+		{
+			return -1;
+		}
+	}
+	
+	for (int i = 0; i < sizeof(RECV_SYNC_TIME_TAIL); i++)
+	{
+		if (RECV_SYNC_TIME_TAIL[i] != recvBuff[pos + SYNC_TIME_RESONSE_HEAD.length() + sizeof(short) + i])
+		{
+			return -1;
+		}
+	}
+
+	curRecvData.cmdType = RECV_COMMAND_SYNC_TIME;
+	
+    pData = (uint16_t*) &recvBuff[pos + sizeof(SYNC_TIME_RESONSE_HEAD) + 1];
+	recv_ts = convert2LittleBigEndian(pData[0]);
+    //recv_ts =pData[1]*256+pData[2] ;
+	qDebug()<<"recv_ts"<<recv_ts<<"pData0"<<pData[0];
+	//qDebug()<<"sizeof"<<sizeof(SYNC_TIME_RESONSE_HEAD)<<((uint8_t*)&recvBuff[pos])[0];
+	
+    curRecvData.arrResult[0] = recv_ts;
+	curRecvData.recvDataLen = 1;
+	return sizeof(SYNC_TIME_RESONSE_HEAD) + sizeof(RECV_SYNC_TIME_TAIL) + sizeof(short);
+
 }

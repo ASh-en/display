@@ -70,6 +70,7 @@ int serial_communicate::write_data_to_com(SEND_COMMAND_NODE& send_data)
     else
     {
         buff = mSendCommand.getSendCommand(send_data.commandNum, send_data.param, send_data.paramLen);
+        //qDebug()<<"getSendCommand"<<buff;
     }
     if (0 > serial_port.write(buff, COMMAND_LENGTH))
     {
@@ -117,7 +118,7 @@ void* send_data_proc(void* pParam)
             {
                 continue_send_cmd[g_send_cmd_lst.at(0).commandNum] = true;
                 g_send_cmd_lst[0].sendNumber += 1;
-                usleep(50 * 1000); // 休眠50ms
+                usleep(500 * 1000); // 休眠50ms
             }
             else
             {
@@ -177,4 +178,11 @@ int serial_communicate::add_send_command_list(SEND_COMMAND_NUMBER_E commandNum, 
     g_send_cmd_lst.append(tmpNode);
     g_locker.unlock();
     return EOK;
+}
+
+void serial_communicate::clear_g_send_cmd_lst()
+{
+    g_locker.lock();
+    g_send_cmd_lst.clear();
+    g_locker.unlock();
 }
