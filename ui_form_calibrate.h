@@ -44,6 +44,10 @@ public:
     QComboBox *cbx_material;
     QDoubleSpinBox *dsb_cal_speed;
     QTableWidget *tbl_step_workpiece;
+    QHBoxLayout *horizontalLayout_6;
+    QPushButton *ptn_plus_number;
+    QPushButton *ptn_minus_number;
+    QComboBox *cbx_rate;
     QVBoxLayout *verticalLayout;
     QPushButton *ptn_save_speed;
     QSpacerItem *verticalSpacer_2;
@@ -135,6 +139,14 @@ public:
         dsb_cal_speed->setMaximum(10000.0);
         dsb_cal_speed->setSingleStep(1.0);
         dsb_cal_speed->setValue(3090.0);
+        ptn_plus_number->setText(QCoreApplication::translate("form_calibrate", "+", nullptr));
+        ptn_minus_number->setText(QCoreApplication::translate("form_calibrate", "-", nullptr));
+        cbx_rate->setItemText(0, QCoreApplication::translate("form_calibrate", "0.01", nullptr));
+        cbx_rate->setItemText(1, QCoreApplication::translate("form_calibrate", "0.02", nullptr));
+        cbx_rate->setItemText(2, QCoreApplication::translate("form_calibrate", "0.05", nullptr));
+        cbx_rate->setItemText(3, QCoreApplication::translate("form_calibrate", "0.1", nullptr));
+        cbx_rate->setItemText(4, QCoreApplication::translate("form_calibrate", "0.5", nullptr));
+        cbx_rate->setItemText(5, QCoreApplication::translate("form_calibrate", "1.0", nullptr));
         dsb_cal_speed->setAlignment(Qt::AlignCenter);
 
         horizontalLayout_4->addWidget(dsb_cal_speed);
@@ -146,6 +158,29 @@ public:
         tbl_step_workpiece->setObjectName(QString::fromUtf8("tbl_step_workpiece"));
 
         verticalLayout_2->addWidget(tbl_step_workpiece);
+
+        horizontalLayout_6 = new QHBoxLayout();
+        horizontalLayout_6->setObjectName(QString::fromUtf8("horizontalLayout_6"));
+
+        ptn_plus_number = new QPushButton(widget);
+        ptn_plus_number->setObjectName(QString::fromUtf8("ptn_plus_number"));
+        horizontalLayout_6->addWidget(ptn_plus_number);
+
+        ptn_minus_number = new QPushButton(widget);
+        ptn_minus_number->setObjectName(QString::fromUtf8("ptn_minus_number"));
+        horizontalLayout_6->addWidget(ptn_minus_number);
+
+        cbx_rate = new QComboBox(widget);
+        cbx_rate->setObjectName(QString::fromUtf8("cbx_rate"));
+        cbx_rate->addItem(QString());
+        cbx_rate->addItem(QString());
+        cbx_rate->addItem(QString());
+        cbx_rate->addItem(QString());
+        cbx_rate->addItem(QString());
+        cbx_rate->addItem(QString());
+        horizontalLayout_6->addWidget(cbx_rate);
+
+        verticalLayout_2->addLayout(horizontalLayout_6);
 
 
         horizontalLayout_5->addLayout(verticalLayout_2);

@@ -13,6 +13,12 @@ form_calibrate::form_calibrate(QWidget *parent) :
     QObject::connect(ui->ptn_save_speed, &QPushButton::clicked, this, &form_calibrate::on_btn_save_actual_data);
     QObject::connect(ui->ptn_set_speed, &QPushButton::clicked, this, &form_calibrate::on_set_ultra_speed);
 
+    // connect new plus/minus buttons and rate combobox
+    connect(ui->cbx_rate, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &form_calibrate::on_cbx_rate_changed);
+
+    // sensible default step rate (0.1)
+    ui->cbx_rate->setCurrentIndex(3);
+
     initMaterialInfo();
 
 	
@@ -136,13 +142,15 @@ void form_calibrate::on_set_ultra_speed()
     // QDoubleSpinBox 直接返回数值，不需要 text->toDouble 验证
     double cal_speed = ui->dsb_cal_speed->value();
     // 2. 获取当前选中的材料名称
+   // 将显示名映射为原始名
     QString cur_material = ui->cbx_material->currentText();
-    if (cur_material.isEmpty()) {
-        qDebug() << "警告：未选择任何材料，无法保存速度！";
-        QMessageBox::warning(this, QString::fromLocal8Bit("警告"), QString::fromLocal8Bit("请先选择一种材料！"));
-        return;
+    QString originMaterial = cur_material;
+    if (m_displayToOriginMaterial.contains(cur_material)) {
+        originMaterial = m_displayToOriginMaterial[cur_material];
+    } else {
+        qDebug() << "警告：未找到材料显示名" << cur_material << "对应的原始名，使用显示名进行保存。";
     }
-    
+
     // 3. 发送参数更改的信号
     emit sendParamChanged(static_cast<INT16>(2), static_cast<INT16>(cal_speed * 10));
 
@@ -151,6 +159,62 @@ void form_calibrate::on_set_ultra_speed()
     
 
     qDebug() << "成功设置材料 '" << cur_material << "' 的速度为: " << cal_speed;
+}
+
+// Increase current focused table cell by selected rate
+void form_calibrate::on_ptn_plus_number_clicked()
+{
+    QModelIndex idx = ui->tbl_step_workpiece->currentIndex();
+    if (!idx.isValid()) {
+        qDebug() << "[on_ptn_plus_number_clicked] 没有选中的单元格";
+        return;
+    }
+    int row = idx.row();
+    int col = idx.column();
+    QTableWidgetItem *it = ui->tbl_step_workpiece->item(row, col);
+    if (!it) {
+        it = new QTableWidgetItem("0");
+        ui->tbl_step_workpiece->setItem(row, col, it);
+    }
+    bool ok;
+    double val = it->text().toDouble(&ok);
+    if (!ok) val = 0.0;
+    double step = ui->cbx_rate->currentText().toDouble(&ok);
+    if (!ok) step = 0.1;
+    val += step;
+    int decimals = (row == 1) ? 3 : 2;
+    it->setText(QString::number(val, 'f', decimals));
+}
+
+// Decrease current focused table cell by selected rate
+void form_calibrate::on_ptn_minus_number_clicked()
+{
+    QModelIndex idx = ui->tbl_step_workpiece->currentIndex();
+    if (!idx.isValid()) {
+        qDebug() << "[on_ptn_minus_number_clicked] 没有选中的单元格";
+        return;
+    }
+    int row = idx.row();
+    int col = idx.column();
+    QTableWidgetItem *it = ui->tbl_step_workpiece->item(row, col);
+    if (!it) {
+        it = new QTableWidgetItem("0");
+        ui->tbl_step_workpiece->setItem(row, col, it);
+    }
+    bool ok;
+    double val = it->text().toDouble(&ok);
+    if (!ok) val = 0.0;
+    double step = ui->cbx_rate->currentText().toDouble(&ok);
+    if (!ok) step = 0.1;
+    val -= step;
+    int decimals = (row == 1) ? 3 : 2;
+    it->setText(QString::number(val, 'f', decimals));
+}
+
+void form_calibrate::on_cbx_rate_changed(int index)
+{
+    Q_UNUSED(index);
+    qDebug() << "rate changed to" << ui->cbx_rate->currentText();
 }
 
 double form_calibrate::calculateBestSpeed(const std::vector<double>& measuredThicknesses, const std::vector<double>& actualThicknesses, double init_speed)

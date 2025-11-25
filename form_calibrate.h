@@ -40,6 +40,10 @@ private slots:
     void ptn_clicked_calculate();
     void on_btn_save_actual_data();
     void on_set_ultra_speed();
+    // new UI controls for adjusting current table cell
+    void on_ptn_plus_number_clicked();
+    void on_ptn_minus_number_clicked();
+    void on_cbx_rate_changed(int index);
 
 
 };

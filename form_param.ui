@@ -62,6 +62,26 @@
             <pointsize>12</pointsize>
            </font>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QSpinBox::up-button, QSpinBox::down-button {
+    width: 14px;
+    height: 8px;
+    border: 1px solid gray;
+    background: lightgray;
+}
+QSpinBox::up-button {
+    subcontrol-position: top right;
+    border-bottom: none;
+}
+QSpinBox::down-button {
+    subcontrol-position: bottom right;
+    border-top: none;
+}
+QSpinBox::up-arrow, QSpinBox::down-arrow {
+    width: 5px;
+    height: 5px;
+}</string>
+          </property>
           <property name="minimum">
            <number>0</number>
           </property>
@@ -95,6 +115,26 @@
            <font>
             <pointsize>12</pointsize>
            </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QSpinBox::up-button, QSpinBox::down-button {
+    width: 14px;
+    height: 8px;
+    border: 1px solid gray;
+    background: lightgray;
+}
+QSpinBox::up-button {
+    subcontrol-position: top right;
+    border-bottom: none;
+}
+QSpinBox::down-button {
+    subcontrol-position: bottom right;
+    border-top: none;
+}
+QSpinBox::up-arrow, QSpinBox::down-arrow {
+    width: 5px;
+    height: 5px;
+}</string>
           </property>
           <property name="minimum">
            <number>0</number>
