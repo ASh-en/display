@@ -6,6 +6,7 @@
 #include <QProcess>
 #include <QStringList>
 #include <QCoreApplication>
+
 //定义数据有效时间
 const qint64 DATA_VALID_DURATION_MS = 1000; // 数据有效时间为1000毫秒（1秒）
 Widget::Widget(QWidget *parent) :
@@ -21,7 +22,8 @@ Widget::Widget(QWidget *parent) :
     ui->stackedWidget->addWidget(pCalibrateForm);
     ui->stackedWidget->addWidget(pParamForm);
     ui->stackedWidget->addWidget(pMeasureForm);
-  
+
+
     // 连接页面切换信号
     connect(ui->btnMeasure, &QPushButton::clicked, this, &Widget::onBtnMeasureClicked);
     connect(ui->btnCalibrate, &QPushButton::clicked, this, &Widget::onBtnCalibrateClicked);
@@ -33,6 +35,8 @@ Widget::Widget(QWidget *parent) :
    
     // 初始化Modbus服务器
     initModbusServer();
+
+    
 
     // 默认显示测量页面
     ui->stackedWidget->setCurrentWidget(pMeasureForm);

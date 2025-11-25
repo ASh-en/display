@@ -40,7 +40,8 @@ SOURCES += \
     g_var.cpp \
     prasingRecvCmd.cpp \
     sendCmd.cpp \
-    serial_communicate.cpp
+    serial_communicate.cpp\
+    NumberKeyboard.cpp
 
 HEADERS += \
          qcustomplot.h\
@@ -62,7 +63,8 @@ HEADERS += \
     g_var.h \
     prasingRecvCmd.h \
     sendCmd.h \
-    serial_communicate.h
+    serial_communicate.h\
+    NumberKeyboard.h
     
 
    

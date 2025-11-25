@@ -2,6 +2,32 @@
 #include "ui_form_calibrate.h"
 #include <QDebug>
 #include <QMessageBox>
+#include <QScreen>
+
+
+#include "NumberKeyboard.h"
+
+void showKeyboardFor(QLineEdit *edit)
+{
+    NumberKeyboard *kb = new NumberKeyboard();
+    kb->setTarget(edit);
+
+    QRect rect = edit->geometry();
+    QPoint below = edit->mapToGlobal(QPoint(0, rect.height()));
+
+    kb->move(below);
+
+    QScreen *screen = QGuiApplication::primaryScreen();
+    int screenH = screen->geometry().height();
+    if (below.y() + kb->height() > screenH) {
+        kb->move(edit->mapToGlobal(QPoint(0, -kb->height())));
+    }
+
+    kb->exec();
+}
+
+
+
 
 form_calibrate::form_calibrate(QWidget *parent) :
     QWidget(parent),
@@ -14,6 +40,17 @@ form_calibrate::form_calibrate(QWidget *parent) :
     QObject::connect(ui->ptn_set_speed, &QPushButton::clicked, this, &form_calibrate::on_set_ultra_speed);
 
     initMaterialInfo();
+
+    connect(ui->ldt_cur_thickness, &QLineEdit::selectionChanged, this, [=](){
+        showKeyboardFor(ui->ldt_cur_thickness);
+    });
+
+    connect(ui->ldt_ultra_speed, &QLineEdit::selectionChanged, this, [=](){
+        showKeyboardFor(ui->ldt_ultra_speed);
+    });
+
+
+
 
 	
 }
