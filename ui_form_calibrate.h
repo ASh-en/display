@@ -16,6 +16,7 @@
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpacerItem>
 #include <QtWidgets/QTableWidget>
@@ -41,7 +42,7 @@ public:
     QHBoxLayout *horizontalLayout_4;
     QLabel *lbl_ultra_speed;
     QComboBox *cbx_material;
-    QLineEdit *ldt_cal_speed;
+    QDoubleSpinBox *dsb_cal_speed;
     QTableWidget *tbl_step_workpiece;
     QVBoxLayout *verticalLayout;
     QPushButton *ptn_save_speed;
@@ -126,12 +127,17 @@ public:
 
         horizontalLayout_4->addWidget(cbx_material);
 
-        ldt_cal_speed = new QLineEdit(widget);
-        ldt_cal_speed->setObjectName(QString::fromUtf8("ldt_cal_speed"));
-        ldt_cal_speed->setFont(font);
-        ldt_cal_speed->setAlignment(Qt::AlignCenter);
+        dsb_cal_speed = new QDoubleSpinBox(widget);
+        dsb_cal_speed->setObjectName(QString::fromUtf8("dsb_cal_speed"));
+        dsb_cal_speed->setFont(font);
+        dsb_cal_speed->setDecimals(1);
+        dsb_cal_speed->setMinimum(0.0);
+        dsb_cal_speed->setMaximum(10000.0);
+        dsb_cal_speed->setSingleStep(1.0);
+        dsb_cal_speed->setValue(3090.0);
+        dsb_cal_speed->setAlignment(Qt::AlignCenter);
 
-        horizontalLayout_4->addWidget(ldt_cal_speed);
+        horizontalLayout_4->addWidget(dsb_cal_speed);
 
 
         verticalLayout_2->addLayout(horizontalLayout_4);
@@ -202,7 +208,7 @@ public:
         cbx_material->setItemText(1, QCoreApplication::translate("form_calibrate", "\351\223\235\345\220\210\351\207\2217050", nullptr));
         cbx_material->setItemText(2, QCoreApplication::translate("form_calibrate", "\351\223\235\345\220\210\351\207\2216061", nullptr));
 
-        ldt_cal_speed->setText(QCoreApplication::translate("form_calibrate", "3090.0", nullptr));
+        dsb_cal_speed->setValue(3090.0);
         ptn_save_speed->setText(QCoreApplication::translate("form_calibrate", "\344\277\235\345\255\230", nullptr));
         ptn_calculate->setText(QCoreApplication::translate("form_calibrate", "\350\256\241\347\256\227", nullptr));
         ptn_set_speed->setText(QCoreApplication::translate("form_calibrate", "\345\206\231\345\205\245", nullptr));

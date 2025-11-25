@@ -13,7 +13,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
-#include <QtWidgets/QLineEdit>
+#include <QtWidgets/QSpinBox>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -30,10 +30,10 @@ public:
     QVBoxLayout *verticalLayout;
     QHBoxLayout *horizontalLayout;
     QLabel *label;
-    QLineEdit *ldt_param_number;
+    QSpinBox *spb_param_number;
     QHBoxLayout *horizontalLayout_2;
     QLabel *label_2;
-    QLineEdit *ldt_param_value;
+    QSpinBox *spb_param_value;
     QPushButton *ptn_get_param;
     QPushButton *ptn_set_param;
 
@@ -71,11 +71,14 @@ public:
 
         horizontalLayout->addWidget(label);
 
-        ldt_param_number = new QLineEdit(layoutWidget);
-        ldt_param_number->setObjectName(QString::fromUtf8("ldt_param_number"));
-        ldt_param_number->setFont(font);
+        spb_param_number = new QSpinBox(layoutWidget);
+        spb_param_number->setObjectName(QString::fromUtf8("spb_param_number"));
+        spb_param_number->setFont(font);
+        spb_param_number->setMinimum(0);
+        spb_param_number->setMaximum(1000);
+        spb_param_number->setValue(2);
 
-        horizontalLayout->addWidget(ldt_param_number);
+        horizontalLayout->addWidget(spb_param_number);
 
 
         verticalLayout->addLayout(horizontalLayout);
@@ -88,11 +91,14 @@ public:
 
         horizontalLayout_2->addWidget(label_2);
 
-        ldt_param_value = new QLineEdit(layoutWidget);
-        ldt_param_value->setObjectName(QString::fromUtf8("ldt_param_value"));
-        ldt_param_value->setFont(font);
+        spb_param_value = new QSpinBox(layoutWidget);
+        spb_param_value->setObjectName(QString::fromUtf8("spb_param_value"));
+        spb_param_value->setFont(font);
+        spb_param_value->setMinimum(-32768);
+        spb_param_value->setMaximum(32767);
+        spb_param_value->setValue(0);
 
-        horizontalLayout_2->addWidget(ldt_param_value);
+        horizontalLayout_2->addWidget(spb_param_value);
 
 
         verticalLayout->addLayout(horizontalLayout_2);

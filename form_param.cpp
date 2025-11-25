@@ -7,6 +7,18 @@ form_param::form_param(QWidget *parent) :
     ui(new Ui::form_param)
 {
     ui->setupUi(this);
+    // Set parameter-number spinbox default and runtime range according to PARAM_SIZE
+    // default param index per user request is 2
+    ui->spb_param_number->setMinimum(0);
+    if (PARAM_SIZE > 0) {
+        ui->spb_param_number->setMaximum(PARAM_SIZE - 1);
+    } else {
+        ui->spb_param_number->setMaximum(0);
+    }
+    ui->spb_param_number->setValue(2);
+    // Ensure value spinbox supports full int16 range
+    ui->spb_param_value->setMinimum(0);
+    ui->spb_param_value->setMaximum(65535);
     initPlotGraph();
    set_signal_connect_slot();
 }
@@ -125,8 +137,8 @@ void form_param::updatePlotGraph(const WAVE_DATA& waveData)
 void form_param::ptn_clicked_send_param_slots()
 {
     INT16 sendParam[2] = { 0 };
-    sendParam[0] = ui->ldt_param_number->text().toInt();
-    sendParam[1] = ui->ldt_param_value->text().toInt();
+    sendParam[0] = static_cast<INT16>(ui->spb_param_number->value());
+    sendParam[1] = static_cast<INT16>(ui->spb_param_value->value());
     emit sendParamChanged(sendParam[0], sendParam[1]);
 }
 
@@ -136,18 +148,14 @@ void form_param::ptn_clicked_read_param_slots(){
 
 void form_param::updateDeviceParams(const DEVICE_ULTRA_PARAM_U &params)
 {
-    // 增加功能：根据 ldt_param_number 更新 ldt_param_value
-    QString paramNumberText = ui->ldt_param_number->text().trimmed();
-    bool ok = false;
-    int param_number = paramNumberText.toInt(&ok);
-
-    // 检查是否为有效数字且在范围内
-    if (ok && param_number >= 0 && param_number < PARAM_SIZE) {
-        // 将 params.arrParam[k].value 转换为字符串并设置到 ldt_param_value
-        ui->ldt_param_value->setText(QString::number(params.arrParam[param_number].value));
+    // 根据 spb_param_number 更新 spb_param_value
+    int param_number = ui->spb_param_number->value();
+    if (param_number >= 0 && param_number < PARAM_SIZE) {
+        ui->spb_param_value->setValue(static_cast<int>(params.arrParam[param_number].value));
     } else {
-        ui->ldt_param_value->clear();
-        qDebug() << "[form_param] 无效的参数编号:" << paramNumberText;
+        // out of range: reset to 0 and log
+        ui->spb_param_value->setValue(0);
+        qDebug() << "[form_param] 无效的参数编号:" << param_number;
     }
     
 }

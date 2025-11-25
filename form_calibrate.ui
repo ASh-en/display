@@ -132,14 +132,26 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="ldt_cal_speed">
+          <widget class="QDoubleSpinBox" name="dsb_cal_speed">
             <property name="font">
              <font>
               <pointsize>16</pointsize>
              </font>
             </property>
-            <property name="text">
-             <string>3090.0</string>
+            <property name="value">
+             <number>3090.0</number>
+            </property>
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="singleStep">
+             <double>1.0</double>
+            </property>
+            <property name="minimum">
+             <double>2000.0</double>
+            </property>
+            <property name="maximum">
+             <double>4000.0</double>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>

@@ -124,7 +124,8 @@ void form_calibrate::ptn_clicked_calculate()
     double cal_speed = calculateBestSpeed(measureThickList, actualThickList, currentSpeed);
 
     // 6. 将计算结果更新到UI
-    ui->ldt_cal_speed->setText(QString::number(cal_speed, 'f', 1)); // 保留一位小数
+    // 使用 double spinbox：保留一位小数精度
+    ui->dsb_cal_speed->setValue(cal_speed);
 
     qDebug() << "[ptn_clicked_calculate] 计算完成，最佳速度已更新为:" << cal_speed;
 }
@@ -132,13 +133,8 @@ void form_calibrate::on_set_ultra_speed()
 {
     //qDebug()<<"on_set_ultra_speed";
     // 1. 从行编辑框读取文本并转换为数值
-    bool ok = false;
-    double cal_speed = ui->ldt_cal_speed->text().toDouble(&ok);
-
-    if (!ok) {
-        qDebug() << "错误：无法将输入的速度值转换为数字！";
-        return;
-    }
+    // QDoubleSpinBox 直接返回数值，不需要 text->toDouble 验证
+    double cal_speed = ui->dsb_cal_speed->value();
     // 2. 获取当前选中的材料名称
     QString cur_material = ui->cbx_material->currentText();
     if (cur_material.isEmpty()) {
@@ -239,7 +235,7 @@ void form_calibrate::initMaterialInfo()
     }
 
     // 显示当前声速（保留1位小数，单位m/s）
-    ui->ldt_cal_speed->setText(QString::number(currentSpeed, 'f', 1));
+    ui->dsb_cal_speed->setValue(currentSpeed);
 
 }
 
