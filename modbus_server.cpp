@@ -62,22 +62,22 @@ void ModbusServer::setThicknessData(bool isConnect, double thickness)
     quint16 scaled = static_cast<quint16>(thickness * THICKNESS_SCALE_FACTOR);
     quint16 connectFlag = isConnect ? 1 : 0;
     // 2. 关键修改：将数据转换为大端字节序
-    quint16 bigEndianValue = qToBigEndian(scaled);
-    quint16 littleEndianValue = qToLittleEndian(scaled);
+    //quint16 bigEndianValue = qToBigEndian(scaled);
+    //quint16 littleEndianValue = qToLittleEndian(scaled);
 
     // 3. 写入转换后的大端值
     if (!m_server->setData(QModbusDataUnit::InputRegisters,
                            THICKNESS_INPUT_REG_ADDRESS,
-                           bigEndianValue)) { // 传入大端值
+                           scaled)) { // 传入大端值
         qDebug() << "[Modbus] 厚度写入失败:" << m_server->errorString();
     } else {
         // qDebug() << "[Modbus] 厚度更新：" << thickness << "mm -> 大端值" << QString("0x%1").arg(bigEndianValue, 4, 16, QChar('0'));
     }
+    // m_server->setData(QModbusDataUnit::InputRegisters,
+    //                        THICKNESS_INPUT_REG_ADDRESS+1,
+    //                        littleEndianValue);
     m_server->setData(QModbusDataUnit::InputRegisters,
                            THICKNESS_INPUT_REG_ADDRESS+1,
-                           littleEndianValue);
-    m_server->setData(QModbusDataUnit::InputRegisters,
-                           THICKNESS_INPUT_REG_ADDRESS+2,
                            connectFlag);
 }
 
