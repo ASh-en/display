@@ -79,7 +79,7 @@ private:
     SEND_STATUS_E mSendStatus;
 
     bool matched = false;
-	//bool syncInProgress = false;//ash 20250715
+	bool syncInProgress = false;
 	uint16_t lastSentTimestamp = 0;
     uint16_t timecount = 0;
 	

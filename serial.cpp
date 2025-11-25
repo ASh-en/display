@@ -287,7 +287,15 @@ void serial::onReadyRead()
                         
                         stopThk();                      // 停止获取厚度数据
                         matched = false;
-                        
+                        if(!syncInProgress)
+                        {
+                            
+                            timeSync();                 // 重新触发校时
+                        }
+                        else
+                        {
+                            qDebug() << "Sync already in progress, not triggering another.";
+                        }
                         timeSync();                     // 重新触发校时
                         
                         
@@ -338,7 +346,7 @@ void serial::onReadyRead()
                 matched = (recv_ts == lastSentTimestamp);
                 if (matched)
                 {
-
+                    syncInProgress = false;
                     qDebug() << "Time synchronized successfully.";
                     // 获取厚度数据
                     getThk();
@@ -427,7 +435,7 @@ void serial::onTimerSendStatusSlots()
 
 void serial::timeSync()
 {
-
+    syncInProgress = true;
 	char buffer[13] = {0};
 	memcpy(buffer, "#TMSET", 6);
 	memcpy(buffer + 8, "%%%%", 4);
