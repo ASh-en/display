@@ -183,6 +183,10 @@ int serial_communicate::add_send_command_list(SEND_COMMAND_NUMBER_E commandNum, 
 void serial_communicate::clear_g_send_cmd_lst()
 {
     g_locker.lock();
+    for (int i = 0; i < sizeof(continue_send_cmd) / sizeof(continue_send_cmd[0]); i++)
+    {
+        continue_send_cmd[i] = false;
+    }
     g_send_cmd_lst.clear();
     g_locker.unlock();
 }

@@ -395,6 +395,8 @@ void serial::onTimerSendStatusSlots()
 	static quint64 send_wave_count = 0, send_elec_quantity =0;
 	if(former_status != mSendStatus)
 	{
+        //状态变换清除原有的发送队列
+        p_serial_communicate->clear_g_send_cmd_lst();
 		if( NOT_SEND_THICK_STAUS == mSendStatus)
 		{
 			p_serial_communicate->add_send_command_list(SEND_COMMAND_STOP_THICK);

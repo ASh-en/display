@@ -149,7 +149,7 @@ void Widget::onThicknessUpdateTimeout()
 void Widget::onRetryRequestTimeout()
 {
      //如果当前位于测量页面或者校准页面，发送一次信号，让魔眼启动发送厚度；
-    qDebug() << "发送厚度请求...";
+    //qDebug() << "发送厚度请求...";
     // 这里是你的厚度请求发送逻辑
     if (ui->stackedWidget->currentWidget() == pMeasureForm ||
         ui->stackedWidget->currentWidget() == pCalibrateForm) {

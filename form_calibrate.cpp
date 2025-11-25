@@ -124,7 +124,7 @@ void form_calibrate::ptn_clicked_calculate()
     double cal_speed = calculateBestSpeed(measureThickList, actualThickList, currentSpeed);
 
     // 6. 将计算结果更新到UI
-    ui->ldt_ultra_speed->setText(QString::number(cal_speed, 'f', 1)); // 保留一位小数
+    ui->ldt_cal_speed->setText(QString::number(cal_speed, 'f', 1)); // 保留一位小数
 
     qDebug() << "[ptn_clicked_calculate] 计算完成，最佳速度已更新为:" << cal_speed;
 }
@@ -133,7 +133,7 @@ void form_calibrate::on_set_ultra_speed()
     //qDebug()<<"on_set_ultra_speed";
     // 1. 从行编辑框读取文本并转换为数值
     bool ok = false;
-    double cal_speed = ui->ldt_ultra_speed->text().toDouble(&ok);
+    double cal_speed = ui->ldt_cal_speed->text().toDouble(&ok);
 
     if (!ok) {
         qDebug() << "错误：无法将输入的速度值转换为数字！";
@@ -239,7 +239,7 @@ void form_calibrate::initMaterialInfo()
     }
 
     // 显示当前声速（保留1位小数，单位m/s）
-    ui->ldt_ultra_speed->setText(QString::number(currentSpeed, 'f', 1));
+    ui->ldt_cal_speed->setText(QString::number(currentSpeed, 'f', 1));
 
 }
 

@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
     QObject::connect(&w, &Widget::paramChanged, &seri, &serial::onParamChanged);
     QObject::connect(w.pMeasureForm, &form_measure::sendParamChanged, &seri, &serial::onParamChanged);
     QObject::connect(w.pParamForm, &form_param::sendParamChanged, &seri, &serial::onParamChanged);
+    QObject::connect(w.pCalibrateForm, &form_calibrate::sendParamChanged, &seri, &serial::onParamChanged);
     QObject::connect(w.pParamForm, &form_param::GetParam, &seri, &serial::onReadParam);
     QObject::connect(&w, &Widget::send_status_changed, &seri, &serial::setSendStatus);
 
